@@ -103,6 +103,34 @@ async function initData() {
   updateCountPills();
 }
 
+// Seed database from local JSON files (one-time setup)
+async function seedFromJson() {
+  if (!confirm('Seed database from data/teams.json and data/lots.json?\nThis will overwrite existing teams and lots.')) return;
+  setSyncStatus('Seeding…');
+  try {
+    const [teamsData, lotsData] = await Promise.all([
+      fetch('../data/teams.json').then(r => r.json()),
+      fetch('../data/lots.json').then(r => r.json()),
+    ]);
+    await MongoStore.replaceAll('teams', teamsData);
+    await MongoStore.replaceAll('lots',  lotsData);
+    await MongoStore.insertOne('auction', {
+      id: 'session', status: 'waiting', sessionNum: 1,
+      date: '31 Jul 2026', startTime: '21:00 IST', currentLot: null,
+    });
+    teams = teamsData; lsSet('ah_teams', teams);
+    lots  = lotsData;  lsSet('ah_lots',  lots);
+    renderTeams(); renderLots(); renderStats(); updateCountPills();
+    setSyncStatus('Seeded ' + nowTime(), true);
+    toast('Database seeded — ' + teamsData.length + ' teams, ' + lotsData.length + ' lots');
+  } catch (e) {
+    setSyncStatus('Seed failed: ' + e.message, false);
+    toast('Seed failed: ' + e.message);
+  }
+}
+
+document.getElementById('btn-seed-db').addEventListener('click', seedFromJson);
+
 // Test connection button
 document.getElementById('btn-test-connection').addEventListener('click', async () => {
   setSyncStatus('Testing…');

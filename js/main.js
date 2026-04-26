@@ -143,8 +143,10 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const teams = await loadTeams();
 
     if (teams.length === 0) {
-      recordLoginAttempt(id, 'warn', 'No team data loaded');
-      setTimeout(() => showAdmitted(id), 800);
+      recordLoginAttempt(id, 'fail', 'No team data — DB empty or unreachable');
+      showFormError('System not ready — no team data loaded. Contact the auctioneer.');
+      btn.textContent = 'Enter the hall ↗';
+      btn.disabled = false;
       return;
     }
 
