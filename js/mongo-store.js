@@ -1,96 +1,129 @@
 /* ════════════════════════════════════════════════════════════════
-   MongoStore — MongoDB Atlas Data API wrapper
-   Fill in config.json at the repo root before deploying.
+   MongoStore — RESTHeart REST API wrapper
+   Basic auth, URL-based document identity.
    ════════════════════════════════════════════════════════════════ */
 window.MongoStore = (() => {
-  let _cfg = null;
+  const BASE = 'https://eac7f4.eu-central-1-free-1.restheart.com';
+  const DB   = 'auction_hall';
+  const AUTH = 'Basic ' + btoa('root:Piyush@2010');
 
-  function configPath() {
-    return window.location.pathname.includes('/html/') ? '../config.json' : 'config.json';
-  }
+  function colUrl(name)     { return `${BASE}/${DB}/${name}`; }
+  function docUrl(name, id) { return `${BASE}/${DB}/${name}/${encodeURIComponent(String(id))}`; }
 
-  async function loadConfig() {
-    if (_cfg) return _cfg;
-    const res = await fetch(configPath() + '?v=' + Date.now());
-    if (!res.ok) throw new Error('config.json not found — fill it in at the repo root');
-    _cfg = await res.json();
-    if (!_cfg.mongoApiUrl || _cfg.mongoApiUrl.includes('YOUR_APP_ID')) {
-      throw new Error('config.json not configured — set mongoApiUrl and mongoApiKey');
+  async function req(method, url, body) {
+    const opts = {
+      method,
+      headers: { 'Authorization': AUTH, 'Accept': 'application/json' },
+    };
+    if (body !== undefined && body !== null) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
     }
-    return _cfg;
-  }
-
-  async function call(action, body) {
-    const cfg = await loadConfig();
-    const res = await fetch(`${cfg.mongoApiUrl}/action/${action}`, {
-      method:  'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key':      cfg.mongoApiKey,
-      },
-      body: JSON.stringify({
-        dataSource: cfg.dataSource || 'Cluster0',
-        database:   cfg.database  || 'auction_hall',
-        ...body,
-      }),
-    });
+    const res = await fetch(url, opts);
+    if (res.status === 404)                           return null;
+    if (res.status === 204 || res.status === 201)     return null;
+    if (res.status === 200 && method === 'DELETE')    return null;
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `MongoDB ${action} failed (HTTP ${res.status})`);
+      const t = await res.text().catch(() => '');
+      throw new Error(`RESTHeart ${method} (${res.status}): ${t.slice(0, 200)}`);
     }
-    return res.json();
+    const text = await res.text();
+    if (!text.trim()) return null;
+    return JSON.parse(text);
   }
 
-  // Strip MongoDB _id so callers always get plain objects
-  function clean(doc) {
-    if (!doc) return null;
-    // eslint-disable-next-line no-unused-vars
-    const { _id, ...rest } = doc;
-    return rest;
+  // Strip _id — callers always get the plain document
+  function clean(d) {
+    if (!d) return null;
+    const out = { ...d };
+    delete out._id;
+    return out;
+  }
+
+  // Ensure the database and all required collections exist (idempotent PUTs)
+  async function ensureDB() {
+    await req('PUT', `${BASE}/${DB}`, {});
+    for (const col of ['auction', 'teams', 'lots', 'bids', 'passcode_requests']) {
+      await req('PUT', colUrl(col), {});
+    }
   }
 
   return {
-    async find(collection, filter = {}) {
-      const r = await call('find', { collection, filter });
-      return (r.documents || []).map(clean);
+    // ── Read ───────────────────────────────────────────────────
+
+    async find(collection) {
+      const data = await req('GET', `${colUrl(collection)}?pagesize=1000`);
+      if (!data) return [];
+      const arr = Array.isArray(data) ? data : (data._embedded || []);
+      return arr.map(clean);
     },
 
-    async findOne(collection, filter) {
-      const r = await call('findOne', { collection, filter });
-      return clean(r.document);
+    // id: string — the document's id field (used as _id in RESTHeart)
+    async findOne(collection, id) {
+      const data = await req('GET', docUrl(collection, id));
+      return clean(data);
     },
 
-    async insertOne(collection, doc) {
-      return call('insertOne', { collection, document: doc });
+    // ── Write ──────────────────────────────────────────────────
+
+    // Insert/replace document — uses doc.id as the URL key (PUT = upsert)
+    async insertOne(collection, document) {
+      const id = document.id;
+      if (id != null) {
+        await req('PUT', docUrl(collection, id), document);
+      } else {
+        await req('POST', colUrl(collection), document);
+      }
     },
 
     async insertMany(collection, docs) {
-      if (!docs || !docs.length) return;
-      return call('insertMany', { collection, documents: docs });
+      for (const d of docs) await this.insertOne(collection, d);
     },
 
-    async updateOne(collection, filter, update, upsert = false) {
-      return call('updateOne', { collection, filter, update, upsert });
+    // Merge-patch update: fields = plain object of fields to set/update
+    // RESTHeart PATCH = RFC 7396 merge patch — no $set needed
+    async updateOne(collection, id, fields) {
+      await req('PATCH', docUrl(collection, id), fields);
     },
 
-    async deleteOne(collection, filter) {
-      return call('deleteOne', { collection, filter });
+    // ── Delete ─────────────────────────────────────────────────
+
+    async deleteOne(collection, id) {
+      await req('DELETE', docUrl(collection, id));
     },
 
-    async deleteMany(collection, filter = {}) {
-      return call('deleteMany', { collection, filter });
+    async deleteMany(collection) {
+      // Try RESTHeart bulk delete (*), fall back to individual deletes
+      try {
+        const res = await fetch(`${colUrl(collection)}/*`, {
+          method: 'DELETE',
+          headers: { 'Authorization': AUTH },
+        });
+        if (res.ok || res.status === 204 || res.status === 200) return;
+      } catch (_) {}
+      // Fallback: read all, delete each
+      const docs = await this.find(collection);
+      for (const d of docs) {
+        const id = d.id;
+        if (id != null) await this.deleteOne(collection, id);
+      }
     },
 
-    // Replace every document in a collection — admin-only bulk operation
+    // Replace entire collection — used for admin bulk sync & restart
     async replaceAll(collection, docs) {
-      await call('deleteMany', { collection, filter: {} });
-      if (docs && docs.length) await call('insertMany', { collection, documents: docs });
+      await this.deleteMany(collection);
+      for (const d of docs) await this.insertOne(collection, d);
     },
 
-    // Test connectivity — resolves true or throws
+    // ── Utility ────────────────────────────────────────────────
+
     async ping() {
-      await this.findOne('auction', { id: 'session' });
-      return true;
+      try {
+        await ensureDB();
+        return true;
+      } catch (e) {
+        throw new Error('Cannot reach RESTHeart: ' + e.message);
+      }
     },
   };
 })();

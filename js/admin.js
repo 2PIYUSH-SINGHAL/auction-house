@@ -430,7 +430,7 @@ async function deleteLot(id) {
   lots = lots.filter(l => l.id !== id);
   saveAll();
   renderLots();
-  try { await MongoStore.deleteOne('lots', { id }); } catch (_) {}
+  try { await MongoStore.deleteOne('lots', id); } catch (_) {}
   toast('Lot deleted');
 }
 
@@ -451,11 +451,7 @@ document.getElementById('form-lot').addEventListener('submit', async e => {
   renderLots();
   document.getElementById('modal-lot').classList.add('hidden');
   try {
-    if (editId) {
-      await MongoStore.updateOne('lots', { id: editId }, { $set: data });
-    } else {
-      await MongoStore.insertOne('lots', data);
-    }
+    await MongoStore.insertOne('lots', data); // PUT upserts by id whether new or edit
   } catch (_) {}
   toast(editId ? 'Lot updated' : 'Lot added');
 });
@@ -501,7 +497,7 @@ async function approveBid(bidId) {
   renderBids();
   renderLiveFeed();
   try {
-    await MongoStore.updateOne('bids', { id: bidId }, { $set: { status: 'winning' } });
+    await MongoStore.updateOne('bids', bidId, { status: 'winning' });
     toast(`Approved — ${bid.teamId} on ${bid.lotTitle}`);
   } catch (e) {
     toast('DB sync failed: ' + e.message);
@@ -520,15 +516,14 @@ async function rejectBid(bidId) {
     const prevWin = [...bids]
       .filter(b => b.lotId === bid.lotId && b.status === 'winning' && b.id !== bidId)
       .sort((a, b) => b.amount - a.amount)[0];
-    const newBid     = prevWin ? prevWin.amount   : (lot.floor || 0);
-    const newBidder  = prevWin ? prevWin.teamId   : null;
+    const newBid    = prevWin ? prevWin.amount : (lot.floor || 0);
+    const newBidder = prevWin ? prevWin.teamId : null;
     lots = lots.map(l => l.id === bid.lotId
       ? { ...l, currentBid: newBid, currentBidder: newBidder }
       : l
     );
     try {
-      await MongoStore.updateOne('lots', { id: bid.lotId },
-        { $set: { currentBid: newBid, currentBidder: newBidder } });
+      await MongoStore.updateOne('lots', bid.lotId, { currentBid: newBid, currentBidder: newBidder });
     } catch (_) {}
   }
 
@@ -536,7 +531,7 @@ async function rejectBid(bidId) {
   renderBids();
   renderLiveFeed();
   try {
-    await MongoStore.updateOne('bids', { id: bidId }, { $set: { status: 'rejected' } });
+    await MongoStore.updateOne('bids', bidId, { status: 'rejected' });
     toast('Bid rejected');
   } catch (e) {
     toast('DB sync failed: ' + e.message);
@@ -546,20 +541,20 @@ async function rejectBid(bidId) {
 async function markWon(bidId) {
   const bid = bids.find(b => b.id === bidId);
   if (!bid) return;
-  bids  = bids.map(b  => b.id  === bidId   ? { ...b, status: 'won' } : b);
-  lots  = lots.map(l  => l.id  === bid.lotId
+  bids  = bids.map(b => b.id === bidId    ? { ...b, status: 'won' } : b);
+  lots  = lots.map(l => l.id === bid.lotId
     ? { ...l, status: 'sold', soldTo: bid.teamId, soldFor: bid.amount } : l);
   const newSpent = (teams.find(t => t.id === bid.teamId)?.spent || 0) + bid.amount;
-  teams = teams.map(t => t.id  === bid.teamId ? { ...t, spent: newSpent } : t);
+  teams = teams.map(t => t.id === bid.teamId ? { ...t, spent: newSpent } : t);
   saveAll();
   renderBids();
   renderStats();
   updateCountPills();
   try {
     await Promise.all([
-      MongoStore.updateOne('bids',  { id: bidId },      { $set: { status: 'won' } }),
-      MongoStore.updateOne('lots',  { id: bid.lotId },  { $set: { status: 'sold', soldTo: bid.teamId, soldFor: bid.amount } }),
-      MongoStore.updateOne('teams', { id: bid.teamId }, { $set: { spent: newSpent } }),
+      MongoStore.updateOne('bids',  bidId,       { status: 'won' }),
+      MongoStore.updateOne('lots',  bid.lotId,   { status: 'sold', soldTo: bid.teamId, soldFor: bid.amount }),
+      MongoStore.updateOne('teams', bid.teamId,  { spent: newSpent }),
     ]);
     toast(`Sold — ${bid.lotTitle} to ${bid.teamId}`);
   } catch (e) {
@@ -611,8 +606,8 @@ document.getElementById('form-bid').addEventListener('submit', async e => {
     if (status === 'won' && lot) {
       const t = teams.find(x => x.id === teamId);
       await Promise.all([
-        MongoStore.updateOne('lots',  { id: lotId  }, { $set: { status: 'sold', soldTo: teamId, soldFor: amount } }),
-        MongoStore.updateOne('teams', { id: teamId }, { $set: { spent: t?.spent || amount } }),
+        MongoStore.updateOne('lots',  lotId,  { status: 'sold', soldTo: teamId, soldFor: amount }),
+        MongoStore.updateOne('teams', teamId, { spent: t?.spent || amount }),
       ]);
     }
   } catch (_) {}
@@ -752,7 +747,7 @@ document.getElementById('btn-reset-login').addEventListener('click', async () =>
   saveAll();
   renderTeams();
   try {
-    await MongoStore.updateOne('teams', { id }, { $set: { loggedIn: false, loginLocked: false, loginTime: null } });
+    await MongoStore.updateOne('teams', id, { loggedIn: false, loginLocked: false, loginTime: null });
   } catch (_) {}
   toast('Login reactivated for ' + id);
 });
@@ -771,7 +766,7 @@ document.getElementById('form-edit-team').addEventListener('submit', async e => 
   renderTeams();
   document.getElementById('modal-edit-team').classList.add('hidden');
   try {
-    await MongoStore.updateOne('teams', { id }, { $set: { balance: t.balance, passcode: t.passcode } });
+    await MongoStore.updateOne('teams', id, { balance: t.balance, passcode: t.passcode });
   } catch (_) {}
   toast('Team updated');
 });
@@ -782,7 +777,7 @@ async function deleteTeam(id) {
   saveAll();
   renderTeams();
   updateCountPills();
-  try { await MongoStore.deleteOne('teams', { id }); } catch (_) {}
+  try { await MongoStore.deleteOne('teams', id); } catch (_) {}
   toast('Team removed');
 }
 
@@ -813,7 +808,7 @@ async function resolveForgot(idx) {
   forgotReqs.splice(idx, 1);
   lsSet('ah_forgot', forgotReqs);
   if (req && req.id) {
-    try { await MongoStore.deleteOne('passcode_requests', { id: req.id }); } catch (_) {}
+    try { await MongoStore.deleteOne('passcode_requests', req.id); } catch (_) {}
   }
   renderForgot();
   toast('Request resolved');
@@ -823,7 +818,7 @@ document.getElementById('btn-clear-forgot').addEventListener('click', async () =
   if (!confirm('Clear all requests?')) return;
   forgotReqs = [];
   lsSet('ah_forgot', forgotReqs);
-  try { await MongoStore.deleteMany('passcode_requests'); } catch (_) {}
+  try { await MongoStore.deleteMany('passcode_requests'); } catch (_) {} // no filter needed
   renderForgot();
   toast('Requests cleared');
 });
@@ -1028,9 +1023,9 @@ async function removeLotFromTeam(bidId, lotId, amount) {
   updateCountPills();
   try {
     await Promise.all([
-      MongoStore.updateOne('bids',  { id: bidId },        { $set: { status: 'removed' } }),
-      MongoStore.updateOne('lots',  { id: lotId },        { $set: { status: 'unsold', soldTo: null, soldFor: null } }),
-      MongoStore.updateOne('teams', { id: removingTeamId }, { $set: { spent: newSpent } }),
+      MongoStore.updateOne('bids',  bidId,          { status: 'removed' }),
+      MongoStore.updateOne('lots',  lotId,          { status: 'unsold', soldTo: null, soldFor: null }),
+      MongoStore.updateOne('teams', removingTeamId, { spent: newSpent }),
     ]);
   } catch (_) {}
   toast('Lot removed — ₹' + Number(amount).toLocaleString() + ' refunded');

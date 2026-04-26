@@ -3,9 +3,8 @@
    status values: 'waiting' | 'live' | 'paused' | 'closed'
    ════════════════════════════════════════════════════════════════ */
 
-// Canonical auction schedule — shared by all pages
 window.AUCTION_START_MS    = new Date('2026-07-31T21:00:00+05:30').getTime();
-window.AUCTION_DURATION_MS = 60 * 60 * 1000; // 1 hour
+window.AUCTION_DURATION_MS = 60 * 60 * 1000;
 
 window.AuctionState = (() => {
   const LS_KEY = 'ah_auction';
@@ -41,29 +40,21 @@ window.AuctionState = (() => {
 
     snapshot() { return { ..._state }; },
 
-    save() {
-      localStorage.setItem(LS_KEY, JSON.stringify(_state));
-    },
+    save() { localStorage.setItem(LS_KEY, JSON.stringify(_state)); },
 
-    // Save to localStorage + upsert to MongoDB
     async persist() {
       api.save();
       try {
-        await MongoStore.updateOne(
-          'auction',
-          { id: 'session' },
-          { $set: { ..._state, id: 'session' } },
-          true // upsert
-        );
+        // updateOne = merge patch; upsert handled by RESTHeart PUT on first write
+        await MongoStore.insertOne('auction', { ..._state, id: 'session' });
       } catch (e) {
         console.warn('AuctionState.persist failed:', e.message);
       }
     },
 
-    // Sync from MongoDB (call on page load)
     async sync() {
       try {
-        const doc = await MongoStore.findOne('auction', { id: 'session' });
+        const doc = await MongoStore.findOne('auction', 'session');
         if (doc) {
           _state = Object.assign({}, defaults, doc);
           api.save();

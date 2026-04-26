@@ -86,7 +86,7 @@ function clearFormError() {
   el.textContent = '';
 }
 
-// ── Load teams — always fetch fresh from MongoDB ──────────
+// ── Load teams — always fetch fresh from RESTHeart ─────────
 async function loadTeams() {
   try {
     const fresh = await MongoStore.find('teams');
@@ -178,7 +178,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       return;
     }
 
-    // Valid — mark logged in and lock locally
+    // Valid — mark logged in locally then sync to DB
     team.loggedIn    = true;
     team.loginLocked = true;
     team.loginTime   = new Date().toISOString();
@@ -186,24 +186,17 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     localStorage.setItem('ah_teams', JSON.stringify(updated));
     localStorage.setItem('ah_current_team_id', id);
 
-    // Lock in MongoDB — fire and forget, login already happened
+    // Fire-and-forget: lock account in RESTHeart
     (async () => {
       try {
-        await MongoStore.updateOne(
-          'teams',
-          { id },
-          { $set: { loggedIn: true, loginLocked: true, loginTime: new Date().toISOString() } }
-        );
-        localStorage.setItem('ah_teams', JSON.stringify(updated));
+        await MongoStore.updateOne('teams', id, {
+          loggedIn: true, loginLocked: true, loginTime: new Date().toISOString(),
+        });
       } catch (_) {}
     })();
 
     recordLoginAttempt(id, 'success', team.school);
-
-    if (window._recordForgotRequest) {
-      window._recordForgotRequest(id, team.school);
-    }
-
+    if (window._recordForgotRequest) window._recordForgotRequest(id, team.school);
     setTimeout(() => showAdmitted(id), 800);
 
   } catch (err) {

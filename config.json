@@ -1,6 +1,5 @@
 {
-  "mongoApiUrl": "https://data.mongodb-api.com/app/YOUR_APP_ID/endpoint/data/v1",
-  "mongoApiKey": "YOUR_API_KEY",
-  "database": "auction_hall",
-  "dataSource": "Cluster0"
+  "note": "RESTHeart credentials are hardcoded in js/mongo-store.js. This file is for reference only.",
+  "restHeartUrl": "https://eac7f4.eu-central-1-free-1.restheart.com",
+  "database": "auction_hall"
 }
