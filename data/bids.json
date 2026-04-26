@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "bid-1777218341164",
+    "teamId": "WBS-A-0002",
+    "lotId": "lot-1777218113946",
+    "lotTitle": "apples",
+    "amount": 100,
+    "status": "pending",
+    "time": "21:15:41"
+  }
+]
