@@ -66,7 +66,7 @@
     </ul>
 
     <div class="sidebar-bottom">
-      <button class="sidebar-settings-btn" id="btn-gh-settings">⚙ GitHub sync</button>
+      <button class="sidebar-settings-btn" id="btn-test-connection">⚙ Test connection</button>
       <div class="sidebar-sync" id="sync-status">Not synced</div>
       <div class="sidebar-clock" id="live-clock">--:--:--</div>
     </div>
@@ -135,7 +135,7 @@
       <div class="card" style="margin-top:24px">
         <div class="card-eyebrow" style="display:flex;justify-content:space-between;align-items:center">
           <span>§ Live bid feed</span>
-          <span id="feed-ping" style="font-size:9px;color:rgba(234,223,199,0.25)">auto-refresh every 3s</span>
+          <span id="feed-ping" style="font-size:9px;color:rgba(234,223,199,0.25)">live · polls every 3s</span>
         </div>
         <ul class="feed-list" id="live-feed">
           <li class="feed-empty">No bids yet. Feed will update as bids are recorded.</li>
@@ -148,7 +148,7 @@
       <div class="section-header">
         <h1 class="section-title">Add <em>Items</em></h1>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" id="btn-sync-lots">↑ Sync to GitHub</button>
+          <button class="btn btn-ghost" id="btn-sync-lots">↑ Sync to DB</button>
           <button class="btn btn-primary" id="btn-add-lot">+ Add lot</button>
         </div>
       </div>
@@ -163,13 +163,16 @@
     <!-- ── 3. Bids ───────────────────────────────────────────── -->
     <section id="section-bids" class="section">
       <div class="section-header">
-        <h1 class="section-title">View <em>Bids</em></h1>
+        <div>
+          <h1 class="section-title">View <em>Bids</em></h1>
+          <div class="section-sub">Approve or reject pending bids. Mark winning bids as Won after the auction.</div>
+        </div>
         <button class="btn btn-ghost" id="btn-add-bid">+ Record bid</button>
       </div>
       <div class="card">
         <table class="data-table">
-          <thead><tr><th>Time</th><th>Team</th><th>Lot</th><th>Amount</th><th>Status</th></tr></thead>
-          <tbody id="bids-tbody"><tr><td colspan="5" class="empty-row">No bids recorded yet.</td></tr></tbody>
+          <thead><tr><th>Time</th><th>Team</th><th>Lot</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="bids-tbody"><tr><td colspan="6" class="empty-row">No bids recorded yet.</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -193,7 +196,7 @@
       <div class="section-header">
         <h1 class="section-title">Teams &amp; <em>Passwords</em></h1>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" id="btn-sync-teams">↑ Sync to GitHub</button>
+          <button class="btn btn-ghost" id="btn-sync-teams">↑ Sync to DB</button>
           <button class="btn btn-primary" id="btn-add-team">+ Add team</button>
         </div>
       </div>
@@ -318,26 +321,6 @@
 
   <!-- ══ MODALS ══════════════════════════════════════════════════ -->
 
-  <!-- GitHub token setup -->
-  <div id="modal-gh" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-title">GitHub <em>Sync</em></div>
-      <p style="font-size:14px;color:rgba(234,223,199,0.5);margin-bottom:20px;line-height:1.6">
-        Enter a GitHub Personal Access Token with <code style="color:#a8622f;font-family:'Special Elite',monospace">repo</code> scope.
-        Changes will be committed to the <code style="color:#a8622f;font-family:'Special Elite',monospace">feature/data-layer</code> branch.
-        You can then <code style="color:#a8622f;font-family:'Special Elite',monospace">git pull</code> to fetch the latest data locally.
-      </p>
-      <div class="field-group">
-        <label class="field-label">Personal Access Token</label>
-        <input type="password" class="field-input" id="gh-token-input" placeholder="ghp_••••••••••••••••••••" autocomplete="off">
-      </div>
-      <div id="gh-token-status" style="font-family:'Special Elite',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(234,223,199,0.3);margin-bottom:16px;min-height:16px"></div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="btn-gh-save">Save &amp; test</button>
-        <button class="btn btn-ghost modal-cancel">Cancel</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Add / edit lot -->
   <div id="modal-lot" class="modal-overlay hidden">
@@ -461,7 +444,7 @@
     </div>
   </div>
 
-  <script src="../js/github-store.js"></script>
+  <script src="../js/mongo-store.js"></script>
   <script src="../js/auction-state.js"></script>
   <script src="../js/admin.js"></script>
 </body>

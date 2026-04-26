@@ -4,13 +4,14 @@
    ════════════════════════════════════════════════════════════════ */
 
 // Canonical auction schedule — shared by all pages
-window.AUCTION_START_MS = new Date('2026-07-31T21:00:00+05:30').getTime();
+window.AUCTION_START_MS    = new Date('2026-07-31T21:00:00+05:30').getTime();
 window.AUCTION_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 window.AuctionState = (() => {
   const LS_KEY = 'ah_auction';
 
   const defaults = {
+    id:         'session',
     status:     'waiting',
     sessionNum: 1,
     date:       '31 Jul 2026',
@@ -18,7 +19,6 @@ window.AuctionState = (() => {
     currentLot: null,
   };
 
-  // Merge saved data over defaults so new fields are always present
   function fromStorage() {
     try {
       const raw = localStorage.getItem(LS_KEY);
@@ -29,58 +29,50 @@ window.AuctionState = (() => {
   let _state = fromStorage();
 
   const api = {
-    // ── Getters ──────────────────────────────────────────────
     get status()     { return _state.status; },
     get sessionNum() { return _state.sessionNum; },
     get date()       { return _state.date; },
     get startTime()  { return _state.startTime; },
     get currentLot() { return _state.currentLot; },
 
-    // ── Setters ───────────────────────────────────────────────
     set status(v)     { _state.status = v; },
     set sessionNum(v) { _state.sessionNum = v; },
     set currentLot(v) { _state.currentLot = v; },
 
-    // ── Raw snapshot (for writes) ─────────────────────────────
     snapshot() { return { ..._state }; },
 
-    // ── Save to localStorage ──────────────────────────────────
     save() {
       localStorage.setItem(LS_KEY, JSON.stringify(_state));
     },
 
-    // ── Save to localStorage + push commit to GitHub ──────────
-    async persist(sha, msg) {
+    // Save to localStorage + upsert to MongoDB
+    async persist() {
       api.save();
-      if (typeof GithubStore === 'undefined' || !GithubStore.hasToken()) return null;
       try {
-        const newSha = await GithubStore.write(
-          'data/auction.json',
-          _state,
-          sha || null,
-          msg || `[auction] status → ${_state.status}`,
+        await MongoStore.updateOne(
+          'auction',
+          { id: 'session' },
+          { $set: { ..._state, id: 'session' } },
+          true // upsert
         );
-        return newSha;
       } catch (e) {
         console.warn('AuctionState.persist failed:', e.message);
-        return null;
       }
     },
 
-    // ── Sync from GitHub (call on page load when online) ──────
+    // Sync from MongoDB (call on page load)
     async sync() {
       try {
-        const { data, sha } = await GithubStore.read('data/auction.json');
-        _state = Object.assign({}, defaults, data);
-        api.save();
-        return sha;
+        const doc = await MongoStore.findOne('auction', { id: 'session' });
+        if (doc) {
+          _state = Object.assign({}, defaults, doc);
+          api.save();
+        }
       } catch (e) {
         console.warn('AuctionState.sync failed:', e.message);
-        return null;
       }
     },
 
-    // ── Convenience: is the auction currently accepting bids? ─
     isLive()   { return _state.status === 'live'; },
     isPaused() { return _state.status === 'paused'; },
     isClosed() { return _state.status === 'closed'; },

@@ -1,0 +1,6 @@
+{
+  "mongoApiUrl": "https://data.mongodb-api.com/app/YOUR_APP_ID/endpoint/data/v1",
+  "mongoApiKey": "YOUR_API_KEY",
+  "database": "auction_hall",
+  "dataSource": "Cluster0"
+}

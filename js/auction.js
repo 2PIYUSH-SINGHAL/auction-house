@@ -1,11 +1,9 @@
 // ════════════════════════════════════════════════════════════════
 // AUCTION FLOOR — hack.welham
-// GitHub JSON files are the single source of truth.
-// readRaw() is used for all polls (cache-busted, no auth needed).
-// GithubStore.read/write() is used only for writes (needs SHA).
+// MongoDB Atlas Data API is the single source of truth.
 // ════════════════════════════════════════════════════════════════
 
-const POLL_MS = 8000;
+const POLL_MS = 2000;
 
 // ── Helpers ────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0'); }
@@ -19,12 +17,9 @@ const teamId = localStorage.getItem('ah_current_team_id');
 if (!teamId) { window.location.replace('../index.html'); }
 
 // ── State ───────────────────────────────────────────────────────
-let lots     = [];
-let teams    = [];
-let lotsSha  = null;
-let bidsSha  = null;
-let ghBids   = [];
-let searchQ  = '';
+let lots  = [];
+let teams = [];
+let searchQ = '';
 
 function getTeam()    { return teams.find(t => t.id === teamId) || null; }
 function getBalance() {
@@ -99,11 +94,11 @@ function renderLots() {
     const sold     = lot.status === 'sold';
     const isMine   = lot.currentBidder === teamId;
     const dispAmt  = sold
-      ? (lot.soldFor || lot.currentBid || lot.startingBid || 0)
-      : (lot.currentBid || lot.startingBid || 0);
+      ? (lot.soldFor || lot.currentBid || lot.floor || 0)
+      : (lot.currentBid || lot.floor || 0);
     const bidLabel = sold
       ? 'Sold for'
-      : lot.currentBid ? 'Current bid' : 'Starting bid';
+      : lot.currentBid ? 'Current bid' : 'Floor price';
     const badge    = sold ? 'sold' : isMine ? 'your bid' : 'open';
     const badgeCls = sold ? 'badge-sold' : isMine ? 'badge-mine' : 'badge-open';
     const cardCls  = ['lot-card', sold ? 'lot-sold' : '', isMine ? 'lot-mine' : '']
@@ -112,11 +107,11 @@ function renderLots() {
     return `
     <div class="${cardCls}" style="animation-delay:${Math.min(i * 0.04, 0.5)}s">
       <div class="lot-card-top">
-        <span class="lot-number">${lot.id}</span>
+        <span class="lot-number">${lot.num || lot.id}</span>
         <span class="lot-badge ${badgeCls}">${badge}</span>
       </div>
       <div class="lot-title">${lot.title}</div>
-      ${lot.description ? `<div class="lot-desc">${lot.description}</div>` : ''}
+      ${lot.desc ? `<div class="lot-desc">${lot.desc}</div>` : ''}
       <div class="lot-footer">
         <div>
           <div class="lot-bid-label">${bidLabel}</div>
@@ -132,21 +127,19 @@ function renderLots() {
   }).join('');
 }
 
-// ── Poll: GitHub readRaw (cache-busted, no auth, no rate limit) ─
+// ── Poll: MongoDB every 2s ─────────────────────────────────────
 async function poll() {
   try {
     const [freshAuction, freshLots, freshTeams] = await Promise.all([
-      GithubStore.readRaw('data/auction.json'),
-      GithubStore.readRaw('data/lots.json'),
-      GithubStore.readRaw('data/teams.json'),
+      MongoStore.findOne('auction', { id: 'session' }),
+      MongoStore.find('lots'),
+      MongoStore.find('teams'),
     ]);
 
-    // Update session status
-    const newStatus = freshAuction.status || 'waiting';
+    const newStatus = (freshAuction && freshAuction.status) || 'waiting';
     AuctionState.status = newStatus;
     applyStatus(newStatus);
 
-    // Update lots + teams
     lots  = Array.isArray(freshLots)  ? freshLots  : lots;
     teams = Array.isArray(freshTeams) ? freshTeams : teams;
 
@@ -171,13 +164,13 @@ function openBid(lotId) {
   if (!lot || lot.status === 'sold') return;
   activeLotId = lotId;
 
-  const topBid = lot.currentBid || lot.startingBid || 0;
+  const topBid = lot.currentBid || lot.floor || 0;
 
-  document.getElementById('bid-lot-id').textContent    = lot.id;
+  document.getElementById('bid-lot-id').textContent    = lot.num || lot.id;
   document.getElementById('bid-lot-title').textContent  = lot.title;
   const descEl = document.getElementById('bid-lot-desc');
-  descEl.textContent    = lot.description || '';
-  descEl.style.display  = lot.description ? '' : 'none';
+  descEl.textContent   = lot.desc || '';
+  descEl.style.display = lot.desc ? '' : 'none';
 
   document.getElementById('bid-current').textContent = '₹ ' + topBid.toLocaleString('en-IN');
   document.getElementById('bid-balance').textContent  = '₹ ' + getBalance().toLocaleString('en-IN');
@@ -218,10 +211,9 @@ async function submitBid() {
   const lot = lots.find(l => l.id === activeLotId);
   if (!lot) return;
 
-  const amount  = parseInt(document.getElementById('bid-amount').value, 10);
-  const minBid  = (lot.currentBid || lot.startingBid || 0) + 1;
-  const balance = getBalance();
-  const errEl   = document.getElementById('bid-error');
+  const amount = parseInt(document.getElementById('bid-amount').value, 10);
+  const floor  = lot.floor || 0;
+  const errEl  = document.getElementById('bid-error');
 
   function showErr(msg) {
     errEl.textContent = msg;
@@ -230,12 +222,16 @@ async function submitBid() {
     errEl.classList.add('shake');
   }
 
-  if (!amount || isNaN(amount) || amount < minBid) {
-    showErr(`Bid must be at least ₹ ${minBid.toLocaleString('en-IN')}`);
+  if (!amount || isNaN(amount) || amount <= 0) {
+    showErr('Enter a valid amount.');
     return;
   }
-  if (amount > balance) {
-    showErr(`Not enough balance — you have ₹ ${balance.toLocaleString('en-IN')} left.`);
+  if (amount < floor) {
+    showErr(`Bid must meet the floor price: ₹ ${floor.toLocaleString('en-IN')}`);
+    return;
+  }
+  if (lot.currentBid && amount <= lot.currentBid) {
+    showErr(`Bid must be above the current bid: ₹ ${lot.currentBid.toLocaleString('en-IN')}`);
     return;
   }
 
@@ -244,7 +240,7 @@ async function submitBid() {
   btn.textContent = 'Placing…';
   btn.disabled = true;
 
-  // Optimistic local update so bidder sees result immediately
+  // Optimistic local update
   lots = lots.map(l =>
     l.id === lot.id
       ? { ...l, currentBid: amount, currentBidder: teamId }
@@ -254,9 +250,6 @@ async function submitBid() {
   renderLots();
   closeBid();
 
-  // Write bids.json then lots.json — sequential (not concurrent) so a
-  // conflict on one doesn't leave the other in an inconsistent state.
-  // writeRetry re-reads the current SHA and retries up to 4× on conflict.
   const bid = {
     id:       'bid-' + Date.now(),
     teamId,
@@ -268,37 +261,28 @@ async function submitBid() {
   };
 
   try {
-    // 1. Append bid to bids.json
-    const { data: savedBids } = await GithubStore.writeRetry(
-      'data/bids.json',
-      current => [bid, ...(Array.isArray(current) ? current : [])],
-      `[bid] ${teamId} — ${lot.title} ₹${amount}`
-    );
-    ghBids = savedBids;
+    // 1. Insert bid record
+    await MongoStore.insertOne('bids', bid);
 
-    // 2. Update lot's currentBid in lots.json — only if this bid is
-    //    still higher than whatever is now in GitHub (another team may
-    //    have outbid between our read and write).
-    const { data: savedLots } = await GithubStore.writeRetry(
-      'data/lots.json',
-      current => (Array.isArray(current) ? current : []).map(l => {
-        if (l.id !== lot.id) return l;
-        // Only take this bid if it is genuinely the highest
-        const ghBid = l.currentBid || 0;
-        return amount >= ghBid
-          ? { ...l, currentBid: amount, currentBidder: teamId }
-          : l; // someone else bid higher while we were writing
-      }),
-      `[bid] ${teamId} — ${lot.title} ₹${amount}`
-    );
+    // 2. Update lot's currentBid — only if still the highest
+    const freshLot = await MongoStore.findOne('lots', { id: lot.id });
+    const ghBid = freshLot ? (freshLot.currentBid || 0) : 0;
+    if (amount >= ghBid) {
+      await MongoStore.updateOne(
+        'lots',
+        { id: lot.id },
+        { $set: { currentBid: amount, currentBidder: teamId } }
+      );
+    }
 
-    lots = savedLots;
+    // Refresh lots from DB
+    lots = await MongoStore.find('lots');
     renderLots();
     updateLastSync();
   } catch (e) {
-    errEl.textContent = 'Could not sync bid to GitHub after several retries. ' +
-      'Your bid was recorded locally — tell the auctioneer.';
-    errEl.classList.remove('hidden');
+    const errEl2 = document.getElementById('bid-error');
+    errEl2.textContent = 'Could not save bid to database. Tell the auctioneer: ' + e.message;
+    errEl2.classList.remove('hidden');
     document.getElementById('bid-modal').classList.remove('hidden');
   } finally {
     btn.disabled = false;
@@ -314,24 +298,17 @@ document.getElementById('lot-search').addEventListener('input', e => {
 
 // ── Init ────────────────────────────────────────────────────────
 async function init() {
-  // Sync session status first
   await AuctionState.sync().catch(() => {});
   applyStatus(AuctionState.status);
 
   if (AuctionState.status !== 'closed') {
-    // Load all data from GitHub once (gets SHAs for later writes)
     try {
-      const [{ data: lData, sha: lSha }, { data: tData }, { data: bData, sha: bSha }] =
-        await Promise.all([
-          GithubStore.read('data/lots.json'),
-          GithubStore.read('data/teams.json'),
-          GithubStore.read('data/bids.json').catch(() => ({ data: [], sha: null })),
-        ]);
-      lots    = Array.isArray(lData) ? lData : [];
-      teams   = Array.isArray(tData) ? tData : [];
-      ghBids  = Array.isArray(bData) ? bData : [];
-      lotsSha = lSha;
-      bidsSha = bSha;
+      const [lData, tData] = await Promise.all([
+        MongoStore.find('lots'),
+        MongoStore.find('teams'),
+      ]);
+      lots  = Array.isArray(lData) ? lData : [];
+      teams = Array.isArray(tData) ? tData : [];
     } catch (_) {}
 
     renderTeamInfo();
@@ -341,7 +318,4 @@ async function init() {
 }
 
 init();
-
-// Continuous poll — GitHub readRaw with cache-busting timestamp
-// readRaw hits the CDN (no auth, no rate limit)
 setInterval(poll, POLL_MS);

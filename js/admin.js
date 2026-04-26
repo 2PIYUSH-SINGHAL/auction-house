@@ -2,7 +2,6 @@
 // ADMIN PANEL — hack.welham Auction Hall
 // ════════════════════════════════════════════════════════════════
 
-// ── Auctioneer identity ────────────────────────────────────────
 const auctioneerName = sessionStorage.getItem('auctioneer_name') || 'Auctioneer';
 document.getElementById('auctioneer-display').textContent = auctioneerName;
 
@@ -20,30 +19,23 @@ function ls(key, def) {
 function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
 // ── State ──────────────────────────────────────────────────────
-// sessionState is a convenience alias — AuctionState.status is authoritative
 let sessionState = AuctionState.status;
-let teams      = ls('ah_teams',        []);
-let lots       = ls('ah_lots',         []);
-let bids       = ls('ah_bids',         []);
-let loginLogs  = ls('ah_loginlogs',    []);
-let forgotReqs = ls('ah_forgot',       []);
+let teams      = ls('ah_teams',          []);
+let lots       = ls('ah_lots',           []);
+let bids       = ls('ah_bids',           []);
+let loginLogs  = ls('ah_loginlogs',      []);
+let forgotReqs = ls('ah_forgot',         []);
 let acLog      = ls('ah_auctioneer_log', []);
-
-// SHAs for GitHub writes (populated on read)
-const shas = {};
 
 function saveAll() {
   lsSet('ah_teams', teams);
   lsSet('ah_lots',  lots);
   lsSet('ah_bids',  bids);
-  // loginLogs, forgotReqs, acLog are excluded — they manage their own
-  // localStorage reads/writes and must not be overwritten with a stale
-  // in-memory snapshot taken at page-load time
 }
 
 
 // ════════════════════════════════════════════════════════════════
-// GITHUB SYNC
+// DB SYNC
 // ════════════════════════════════════════════════════════════════
 function setSyncStatus(msg, ok) {
   const el = document.getElementById('sync-status');
@@ -53,82 +45,56 @@ function setSyncStatus(msg, ok) {
                  : 'rgba(234,223,199,0.3)';
 }
 
-async function syncRead(path, localKey, fallback) {
-  try {
-    const { data, sha } = await GithubStore.read(path);
-    shas[path] = sha;
-    lsSet(localKey, data);
-    return data;
-  } catch (e) {
-    console.warn(`GitHub read failed for ${path}:`, e.message);
-    return ls(localKey, fallback);
-  }
-}
-
-async function syncWrite(path, data, localKey, msg) {
-  lsSet(localKey, data);
-  if (!GithubStore.hasToken()) return;
-  try {
-    setSyncStatus('Syncing…');
-    // writeRetry re-reads the current SHA each attempt — no stale SHA failures
-    const { sha } = await GithubStore.writeRetry(path, () => data, msg);
-    shas[path] = sha;
-    setSyncStatus('Synced ' + nowTime(), true);
-  } catch (e) {
-    setSyncStatus('Sync failed: ' + e.message, false);
-    toast('GitHub sync failed: ' + e.message);
-  }
-}
-
-// Safe teams write: reads fresh GitHub data first, merges admin changes
-// but preserves loginLocked/loggedIn from GitHub unless explicitly unlocking.
-// unlockId: teamId to explicitly unlock, null for all other writes.
-async function syncWriteTeamsSafe(msg, unlockId = null) {
+async function syncTeams(msg) {
   lsSet('ah_teams', teams);
-  if (!GithubStore.hasToken()) return;
   try {
     setSyncStatus('Syncing…');
-    const { data: result, sha } = await GithubStore.writeRetry(
-      'data/teams.json',
-      (fresh) => {
-        const freshMap = {};
-        (Array.isArray(fresh) ? fresh : []).forEach(t => { freshMap[t.id] = t; });
-        return teams.map(lt => {
-          const ft = freshMap[lt.id];
-          if (!ft || lt.id === unlockId) return lt; // new team or explicit unlock
-          // Preserve login state from GitHub — never accidentally clear a lock
-          return {
-            ...lt,
-            loggedIn:    ft.loggedIn    || lt.loggedIn,
-            loginLocked: ft.loginLocked || lt.loginLocked,
-            loginTime:   ft.loginTime   || lt.loginTime,
-          };
-        });
-      },
-      msg
-    );
-    teams = result;
-    lsSet('ah_teams', teams);
-    shas['data/teams.json'] = sha;
+    await MongoStore.replaceAll('teams', teams);
     setSyncStatus('Synced ' + nowTime(), true);
   } catch (e) {
     setSyncStatus('Sync failed: ' + e.message, false);
-    toast('GitHub sync failed: ' + e.message);
+    toast('DB sync failed: ' + e.message);
   }
 }
 
-// Load all data from GitHub on startup
+async function syncLots(msg) {
+  lsSet('ah_lots', lots);
+  try {
+    setSyncStatus('Syncing…');
+    await MongoStore.replaceAll('lots', lots);
+    setSyncStatus('Synced ' + nowTime(), true);
+  } catch (e) {
+    setSyncStatus('Sync failed: ' + e.message, false);
+    toast('DB sync failed: ' + e.message);
+  }
+}
+
+async function syncBids() {
+  lsSet('ah_bids', bids);
+  try {
+    await MongoStore.replaceAll('bids', bids);
+  } catch (e) {
+    console.warn('Bids sync failed:', e.message);
+  }
+}
+
 async function initData() {
   setSyncStatus('Loading…');
   try {
-    teams      = await syncRead('data/teams.json',             'ah_teams',        teams);
-    lots       = await syncRead('data/lots.json',              'ah_lots',         lots);
-    forgotReqs = await syncRead('data/passcode-requests.json', 'ah_forgot',       forgotReqs);
-    acLog      = await syncRead('data/auctioneer-log.json',    'ah_auctioneer_log', acLog);
-    // Sync auction status — updates AuctionState global and caches SHA for writes
-    shas['data/auction.json'] = await AuctionState.sync();
+    const [freshTeams, freshLots, freshBids, freshForgot] = await Promise.all([
+      MongoStore.find('teams'),
+      MongoStore.find('lots'),
+      MongoStore.find('bids'),
+      MongoStore.find('passcode_requests').catch(() => []),
+    ]);
+    if (freshTeams.length || !teams.length)  { teams     = freshTeams;  lsSet('ah_teams', teams); }
+    if (freshLots.length  || !lots.length)   { lots      = freshLots;   lsSet('ah_lots',  lots); }
+    if (freshBids.length  || !bids.length)   { bids      = freshBids;   lsSet('ah_bids',  bids); }
+    if (freshForgot.length)                  { forgotReqs = freshForgot; lsSet('ah_forgot', forgotReqs); }
+
+    await AuctionState.sync();
     sessionState = AuctionState.status;
-    setSession(sessionState);           // apply synced status to UI
+    setSession(sessionState);
     setSyncStatus('Loaded ' + nowTime(), true);
   } catch (e) {
     setSyncStatus('Offline — using local data', null);
@@ -137,25 +103,16 @@ async function initData() {
   updateCountPills();
 }
 
-// GitHub settings modal
-document.getElementById('btn-gh-settings').addEventListener('click', () => {
-  document.getElementById('gh-token-input').value = '';
-  document.getElementById('gh-token-status').textContent =
-    GithubStore.hasToken() ? '✓ Token configured' : 'No token set';
-  document.getElementById('modal-gh').classList.remove('hidden');
-});
-
-document.getElementById('btn-gh-save').addEventListener('click', async () => {
-  const token = document.getElementById('gh-token-input').value.trim();
-  if (!token) { document.getElementById('gh-token-status').textContent = 'Enter a token first.'; return; }
-  GithubStore.setToken(token);
-  document.getElementById('gh-token-status').textContent = 'Testing…';
+// Test connection button
+document.getElementById('btn-test-connection').addEventListener('click', async () => {
+  setSyncStatus('Testing…');
   try {
-    await GithubStore.read('data/teams.json');
-    document.getElementById('gh-token-status').textContent = '✓ Connected';
-    setTimeout(() => { document.getElementById('modal-gh').classList.add('hidden'); initData(); }, 800);
+    await MongoStore.ping();
+    setSyncStatus('Connected ' + nowTime(), true);
+    toast('Database connected ✓');
   } catch (e) {
-    document.getElementById('gh-token-status').textContent = '✗ ' + e.message;
+    setSyncStatus('Failed: ' + e.message, false);
+    toast('Connection failed: ' + e.message);
   }
 });
 
@@ -217,13 +174,11 @@ const sessionPill = document.getElementById('nav-session-pill');
 
 function setSession(state) {
   sessionState = state;
-  // Keep global in sync and persist to localStorage + GitHub
   AuctionState.status = state;
-  AuctionState.persist(shas['data/auction.json'])
-    .then(newSha => { if (newSha) shas['data/auction.json'] = newSha; });
+  AuctionState.persist(); // no SHA needed
 
-  statusDot.className  = 'status-dot';
-  statusText.className = 'status-text';
+  statusDot.className   = 'status-dot';
+  statusText.className  = 'status-text';
   sessionPill.className = 'status-pill';
   sessionPill.textContent = '';
 
@@ -287,7 +242,7 @@ const timerNote  = document.getElementById('session-timer-note');
 let autoEndTimer = null;
 
 function updateStartLock() {
-  const now = Date.now();
+  const now   = Date.now();
   const ready = now >= AUCTION_START_MS;
   if (testMode || ready || sessionState !== 'waiting') {
     timerNote.classList.add('hidden');
@@ -306,10 +261,7 @@ function updateAdminCountdown() {
     adminCdEl.classList.add('zeroed');
     adminCdSub.textContent = 'Doors are open';
     updateStartLock();
-    // Auto-start exactly once when timer hits zero
-    if (!testMode && AuctionState.isWaiting()) {
-      autoStart();
-    }
+    if (!testMode && AuctionState.isWaiting()) autoStart();
   } else {
     adminCdEl.classList.remove('zeroed');
     const h = Math.floor(diff / 3600000);
@@ -341,7 +293,6 @@ function scheduleAutoEnd() {
   }, msUntilEnd);
 }
 
-// Re-schedule auto-end if we load the admin panel while the session is already live
 if (AuctionState.isLive()) scheduleAutoEnd();
 
 updateAdminCountdown();
@@ -373,14 +324,14 @@ function renderStats() {
   document.getElementById('stat-raised').textContent = '₹ ' + raised.toLocaleString();
 }
 
-setSession(AuctionState.status); // restore UI from last known state on load
+setSession(AuctionState.status);
 
 // ── Live bid feed ──────────────────────────────────────────────
 function renderLiveFeed() {
-  const list = document.getElementById('live-feed');
+  const list   = document.getElementById('live-feed');
   const recent = [...bids].reverse().slice(0, 12);
   if (!recent.length) {
-    list.innerHTML = '<li class="feed-empty">No bids yet. Feed will update as bids are recorded.</li>';
+    list.innerHTML = '<li class="feed-empty">No bids yet. Feed will update as bids come in.</li>';
     return;
   }
   list.innerHTML = recent.map((b, i) => `
@@ -395,31 +346,30 @@ function renderLiveFeed() {
   `).join('');
 }
 
-// Poll GitHub for bids + lots every 8s — source of truth for cross-device
+// Poll MongoDB every 3s
 setInterval(async () => {
   try {
     const [freshBids, freshLots, freshTeams] = await Promise.all([
-      GithubStore.readRaw('data/bids.json'),
-      GithubStore.readRaw('data/lots.json'),
-      GithubStore.readRaw('data/teams.json'),
+      MongoStore.find('bids'),
+      MongoStore.find('lots'),
+      MongoStore.find('teams'),
     ]);
     if (Array.isArray(freshBids))  { bids  = freshBids;  lsSet('ah_bids',  bids); }
     if (Array.isArray(freshLots))  { lots  = freshLots;  lsSet('ah_lots',  lots); }
     if (Array.isArray(freshTeams)) { teams = freshTeams; lsSet('ah_teams', teams); }
-  } catch (_) { /* keep stale data on network error */ }
-  if (document.getElementById('section-session').classList.contains('active')) {
-    renderLiveFeed();
-    renderStats();
-  }
-}, 8000);
+  } catch (_) {}
 
-// Instant update when another tab on the same browser writes to localStorage
+  const active = document.querySelector('.section.active');
+  if (!active) return;
+  const id = active.id;
+  if (id === 'section-session') { renderLiveFeed(); renderStats(); }
+  if (id === 'section-bids')    renderBids();
+  if (id === 'section-teams')   renderTeams();
+  if (id === 'section-overspent') { renderOverspent(); updateCountPills(); }
+}, 3000);
+
 window.addEventListener('storage', e => {
-  if (e.key === 'ah_bids') {
-    bids = JSON.parse(e.newValue || '[]');
-    renderLiveFeed();
-    renderStats();
-  }
+  if (e.key === 'ah_bids')  { bids  = JSON.parse(e.newValue || '[]'); renderLiveFeed(); renderStats(); }
   if (e.key === 'ah_lots')  { lots  = JSON.parse(e.newValue || '[]'); }
   if (e.key === 'ah_teams') { teams = JSON.parse(e.newValue || '[]'); }
 });
@@ -452,7 +402,7 @@ function renderLots() {
 document.getElementById('btn-add-lot').addEventListener('click', () => openLotModal());
 
 document.getElementById('btn-sync-lots').addEventListener('click', async () => {
-  await syncWrite('data/lots.json', lots, 'ah_lots', '[auction] update lots');
+  await syncLots('[auction] update lots');
 });
 
 function openLotModal(id) {
@@ -475,15 +425,16 @@ function openLotModal(id) {
 
 function editLot(id) { openLotModal(id); }
 
-function deleteLot(id) {
+async function deleteLot(id) {
   if (!confirm('Delete this lot?')) return;
   lots = lots.filter(l => l.id !== id);
   saveAll();
   renderLots();
+  try { await MongoStore.deleteOne('lots', { id }); } catch (_) {}
   toast('Lot deleted');
 }
 
-document.getElementById('form-lot').addEventListener('submit', e => {
+document.getElementById('form-lot').addEventListener('submit', async e => {
   e.preventDefault();
   const editId = document.getElementById('lot-edit-id').value;
   const data = {
@@ -499,28 +450,121 @@ document.getElementById('form-lot').addEventListener('submit', e => {
   saveAll();
   renderLots();
   document.getElementById('modal-lot').classList.add('hidden');
+  try {
+    if (editId) {
+      await MongoStore.updateOne('lots', { id: editId }, { $set: data });
+    } else {
+      await MongoStore.insertOne('lots', data);
+    }
+  } catch (_) {}
   toast(editId ? 'Lot updated' : 'Lot added');
 });
 
 
 // ════════════════════════════════════════════════════════════════
-// 3. BIDS
+// 3. BIDS — with Approve / Reject / Mark Won
 // ════════════════════════════════════════════════════════════════
 function renderBids() {
   const tbody = document.getElementById('bids-tbody');
   if (!bids.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-row">No bids recorded yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-row">No bids recorded yet.</td></tr>';
     return;
   }
-  tbody.innerHTML = [...bids].reverse().map(b => `
+  tbody.innerHTML = [...bids].reverse().map(b => {
+    let actions = '';
+    if (b.status === 'pending') {
+      actions = `
+        <button class="btn btn-primary btn-sm" onclick="approveBid('${b.id}')">Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectBid('${b.id}')" style="margin-left:4px">Reject</button>`;
+    } else if (b.status === 'winning') {
+      actions = `
+        <button class="btn btn-ghost btn-sm" onclick="markWon('${b.id}')">Mark&nbsp;Won</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectBid('${b.id}')" style="margin-left:4px">Reject</button>`;
+    }
+    return `
     <tr>
       <td style="color:rgba(234,223,199,0.35);font-family:'Special Elite',monospace;font-size:11px;white-space:nowrap">${b.time}</td>
       <td class="cell-mono">${b.teamId}</td>
       <td>${b.lotTitle || '—'}</td>
       <td class="cell-amount">₹ ${Number(b.amount).toLocaleString()}</td>
       <td><span class="badge badge-${b.status}">${b.status}</span></td>
-    </tr>
-  `).join('');
+      <td style="text-align:right;white-space:nowrap">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function approveBid(bidId) {
+  const bid = bids.find(b => b.id === bidId);
+  if (!bid) return;
+  bids = bids.map(b => b.id === bidId ? { ...b, status: 'winning' } : b);
+  saveAll();
+  renderBids();
+  renderLiveFeed();
+  try {
+    await MongoStore.updateOne('bids', { id: bidId }, { $set: { status: 'winning' } });
+    toast(`Approved — ${bid.teamId} on ${bid.lotTitle}`);
+  } catch (e) {
+    toast('DB sync failed: ' + e.message);
+  }
+}
+
+async function rejectBid(bidId) {
+  if (!confirm('Reject this bid?')) return;
+  const bid = bids.find(b => b.id === bidId);
+  if (!bid) return;
+  bids = bids.map(b => b.id === bidId ? { ...b, status: 'rejected' } : b);
+
+  // Revert lot's currentBid to the next-highest winning bid
+  const lot = lots.find(l => l.id === bid.lotId);
+  if (lot && lot.currentBidder === bid.teamId) {
+    const prevWin = [...bids]
+      .filter(b => b.lotId === bid.lotId && b.status === 'winning' && b.id !== bidId)
+      .sort((a, b) => b.amount - a.amount)[0];
+    const newBid     = prevWin ? prevWin.amount   : (lot.floor || 0);
+    const newBidder  = prevWin ? prevWin.teamId   : null;
+    lots = lots.map(l => l.id === bid.lotId
+      ? { ...l, currentBid: newBid, currentBidder: newBidder }
+      : l
+    );
+    try {
+      await MongoStore.updateOne('lots', { id: bid.lotId },
+        { $set: { currentBid: newBid, currentBidder: newBidder } });
+    } catch (_) {}
+  }
+
+  saveAll();
+  renderBids();
+  renderLiveFeed();
+  try {
+    await MongoStore.updateOne('bids', { id: bidId }, { $set: { status: 'rejected' } });
+    toast('Bid rejected');
+  } catch (e) {
+    toast('DB sync failed: ' + e.message);
+  }
+}
+
+async function markWon(bidId) {
+  const bid = bids.find(b => b.id === bidId);
+  if (!bid) return;
+  bids  = bids.map(b  => b.id  === bidId   ? { ...b, status: 'won' } : b);
+  lots  = lots.map(l  => l.id  === bid.lotId
+    ? { ...l, status: 'sold', soldTo: bid.teamId, soldFor: bid.amount } : l);
+  const newSpent = (teams.find(t => t.id === bid.teamId)?.spent || 0) + bid.amount;
+  teams = teams.map(t => t.id  === bid.teamId ? { ...t, spent: newSpent } : t);
+  saveAll();
+  renderBids();
+  renderStats();
+  updateCountPills();
+  try {
+    await Promise.all([
+      MongoStore.updateOne('bids',  { id: bidId },      { $set: { status: 'won' } }),
+      MongoStore.updateOne('lots',  { id: bid.lotId },  { $set: { status: 'sold', soldTo: bid.teamId, soldFor: bid.amount } }),
+      MongoStore.updateOne('teams', { id: bid.teamId }, { $set: { spent: newSpent } }),
+    ]);
+    toast(`Sold — ${bid.lotTitle} to ${bid.teamId}`);
+  } catch (e) {
+    toast('DB sync failed: ' + e.message);
+  }
 }
 
 document.getElementById('btn-add-bid').addEventListener('click', () => {
@@ -536,7 +580,7 @@ function populateBidSelects() {
     lots.map(l  => `<option value="${l.id}">${l.num} · ${l.title}</option>`).join('');
 }
 
-document.getElementById('form-bid').addEventListener('submit', e => {
+document.getElementById('form-bid').addEventListener('submit', async e => {
   e.preventDefault();
   const teamId = document.getElementById('bid-team').value;
   const lotId  = document.getElementById('bid-lot').value;
@@ -550,8 +594,9 @@ document.getElementById('form-bid').addEventListener('submit', e => {
   bids.push(bid);
 
   if (status === 'won' && lot) {
-    lots = lots.map(l => l.id === lotId ? { ...l, status: 'sold', soldTo: teamId, soldFor: amount } : l);
-    teams = teams.map(t => t.id === teamId ? { ...t, spent: (t.spent || 0) + amount } : t);
+    lots  = lots.map(l  => l.id === lotId   ? { ...l, status: 'sold', soldTo: teamId, soldFor: amount } : l);
+    const newSpent = (teams.find(t => t.id === teamId)?.spent || 0) + amount;
+    teams = teams.map(t => t.id === teamId  ? { ...t, spent: newSpent } : t);
   }
 
   saveAll();
@@ -560,6 +605,17 @@ document.getElementById('form-bid').addEventListener('submit', e => {
   renderStats();
   document.getElementById('modal-bid').classList.add('hidden');
   updateCountPills();
+
+  try {
+    await MongoStore.insertOne('bids', bid);
+    if (status === 'won' && lot) {
+      const t = teams.find(x => x.id === teamId);
+      await Promise.all([
+        MongoStore.updateOne('lots',  { id: lotId  }, { $set: { status: 'sold', soldTo: teamId, soldFor: amount } }),
+        MongoStore.updateOne('teams', { id: teamId }, { $set: { spent: t?.spent || amount } }),
+      ]);
+    }
+  } catch (_) {}
   toast('Bid recorded');
 });
 
@@ -568,7 +624,7 @@ document.getElementById('form-bid').addEventListener('submit', e => {
 // 4. LOGIN LOGS
 // ════════════════════════════════════════════════════════════════
 function addLoginLog(teamId, status, note, device) {
-  loginLogs = ls('ah_loginlogs', loginLogs); // freshen from storage
+  loginLogs = ls('ah_loginlogs', loginLogs);
   loginLogs.unshift({ time: nowTime(), teamId, status, note: note || '', device: device || '' });
   if (loginLogs.length > 300) loginLogs.pop();
   lsSet('ah_loginlogs', loginLogs);
@@ -611,7 +667,7 @@ function renderTeams() {
     return;
   }
   tbody.innerHTML = teams.map(t => {
-    const locked = t.loginLocked;
+    const locked    = t.loginLocked;
     const badgeClass = locked ? 'badge-outbid' : t.loggedIn ? 'badge-active' : 'badge-pending';
     const badgeText  = locked ? 'locked'        : t.loggedIn ? 'logged in'   : 'waiting';
     return `
@@ -635,10 +691,10 @@ document.getElementById('btn-add-team').addEventListener('click', () => {
 });
 
 document.getElementById('btn-sync-teams').addEventListener('click', async () => {
-  await syncWriteTeamsSafe('[auction] update teams');
+  await syncTeams('[auction] update teams');
 });
 
-document.getElementById('form-team').addEventListener('submit', e => {
+document.getElementById('form-team').addEventListener('submit', async e => {
   e.preventDefault();
   const id      = document.getElementById('team-id').value.trim().toUpperCase();
   const school  = document.getElementById('team-school').value.trim();
@@ -646,11 +702,13 @@ document.getElementById('form-team').addEventListener('submit', e => {
   const balance = parseInt(document.getElementById('team-balance').value, 10) || 1000;
   if (!id || !school) return;
   if (teams.find(t => t.id === id)) { toast('Team ID already exists'); return; }
-  teams.push({ id, school, passcode: pass, balance, spent: 0, loggedIn: false, loginLocked: false, loginTime: null });
+  const team = { id, school, passcode: pass, balance, spent: 0, loggedIn: false, loginLocked: false, loginTime: null };
+  teams.push(team);
   saveAll();
   renderTeams();
   updateCountPills();
   document.getElementById('modal-team').classList.add('hidden');
+  try { await MongoStore.insertOne('teams', team); } catch (_) {}
   toast('Team added');
 });
 
@@ -683,7 +741,7 @@ function refreshEditLoginStatus(t) {
   }
 }
 
-document.getElementById('btn-reset-login').addEventListener('click', () => {
+document.getElementById('btn-reset-login').addEventListener('click', async () => {
   const id = document.getElementById('edit-team-id').value;
   teams = teams.map(t => t.id === id
     ? { ...t, loggedIn: false, loginLocked: false, loginTime: null }
@@ -692,12 +750,14 @@ document.getElementById('btn-reset-login').addEventListener('click', () => {
   const t = teams.find(x => x.id === id);
   refreshEditLoginStatus(t);
   saveAll();
-  syncWriteTeamsSafe(`[admin] reactivated login for ${id}`, id);
   renderTeams();
+  try {
+    await MongoStore.updateOne('teams', { id }, { $set: { loggedIn: false, loginLocked: false, loginTime: null } });
+  } catch (_) {}
   toast('Login reactivated for ' + id);
 });
 
-document.getElementById('form-edit-team').addEventListener('submit', e => {
+document.getElementById('form-edit-team').addEventListener('submit', async e => {
   e.preventDefault();
   const id      = document.getElementById('edit-team-id').value;
   const newPass = document.getElementById('edit-team-pass').value.trim();
@@ -706,18 +766,23 @@ document.getElementById('form-edit-team').addEventListener('submit', e => {
     if (t.id !== id) return t;
     return { ...t, balance: isNaN(balance) ? t.balance : balance, passcode: newPass || t.passcode };
   });
+  const t = teams.find(x => x.id === id);
   saveAll();
   renderTeams();
   document.getElementById('modal-edit-team').classList.add('hidden');
+  try {
+    await MongoStore.updateOne('teams', { id }, { $set: { balance: t.balance, passcode: t.passcode } });
+  } catch (_) {}
   toast('Team updated');
 });
 
-function deleteTeam(id) {
+async function deleteTeam(id) {
   if (!confirm('Remove team ' + id + '?')) return;
   teams = teams.filter(t => t.id !== id);
   saveAll();
   renderTeams();
   updateCountPills();
+  try { await MongoStore.deleteOne('teams', { id }); } catch (_) {}
   toast('Team removed');
 }
 
@@ -743,17 +808,22 @@ function renderForgot() {
   `).join('');
 }
 
-function resolveForgot(idx) {
+async function resolveForgot(idx) {
+  const req = forgotReqs[idx];
   forgotReqs.splice(idx, 1);
   lsSet('ah_forgot', forgotReqs);
+  if (req && req.id) {
+    try { await MongoStore.deleteOne('passcode_requests', { id: req.id }); } catch (_) {}
+  }
   renderForgot();
   toast('Request resolved');
 }
 
-document.getElementById('btn-clear-forgot').addEventListener('click', () => {
+document.getElementById('btn-clear-forgot').addEventListener('click', async () => {
   if (!confirm('Clear all requests?')) return;
   forgotReqs = [];
   lsSet('ah_forgot', forgotReqs);
+  try { await MongoStore.deleteMany('passcode_requests'); } catch (_) {}
   renderForgot();
   toast('Requests cleared');
 });
@@ -816,7 +886,7 @@ function renderUnsold() {
 let restartExtraLots = [];
 
 function renderRestart() {
-  const unsold = lots.filter(l => l.status === 'unsold' || (l.status === 'pending' && sessionState === 'closed'));
+  const unsold    = lots.filter(l => l.status === 'unsold' || (l.status === 'pending' && sessionState === 'closed'));
   const container = document.getElementById('restart-unsold-list');
   container.innerHTML = unsold.length
     ? unsold.map(l => `
@@ -842,7 +912,7 @@ document.getElementById('btn-restart-add-lot').addEventListener('click', () => {
   toast('Lot queued for new round');
 });
 
-document.getElementById('btn-restart-auction').addEventListener('click', () => {
+document.getElementById('btn-restart-auction').addEventListener('click', async () => {
   if (!confirm('Reset the session and carry over selected lots?')) return;
   const checked = [...document.querySelectorAll('#restart-unsold-list input:checked')].map(i => i.value);
   const carried = lots
@@ -854,10 +924,19 @@ document.getElementById('btn-restart-auction').addEventListener('click', () => {
   restartExtraLots = [];
   saveAll();
 
-  // Navigate to session and reset state
+  try {
+    await Promise.all([
+      MongoStore.replaceAll('lots',  lots),
+      MongoStore.replaceAll('bids',  bids),
+      MongoStore.replaceAll('teams', teams),
+    ]);
+  } catch (e) {
+    toast('DB sync failed: ' + e.message);
+  }
+
   unlockPostAuction(false);
   setSession('waiting');
-  navigateTo('session');   // ← fixes the "have to go back manually" issue
+  navigateTo('session');
   toast('Auction restarted — ' + lots.length + ' lots loaded');
 });
 
@@ -918,8 +997,8 @@ function selectRemoveTeam(id) {
 }
 
 function renderRemoveLotsList() {
-  const tbody    = document.getElementById('remove-lots-tbody');
-  const wonBids  = bids.filter(b => b.teamId === removingTeamId && b.status === 'won');
+  const tbody   = document.getElementById('remove-lots-tbody');
+  const wonBids = bids.filter(b => b.teamId === removingTeamId && b.status === 'won');
   if (!wonBids.length) {
     tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No won lots for this team.</td></tr>';
     return;
@@ -937,21 +1016,29 @@ function renderRemoveLotsList() {
   }).join('');
 }
 
-function removeLotFromTeam(bidId, lotId, amount) {
+async function removeLotFromTeam(bidId, lotId, amount) {
   if (!confirm('Remove this lot and refund ₹' + amount.toLocaleString() + ' to the team?')) return;
   bids  = bids.map(b  => b.id  === bidId ? { ...b, status: 'removed' } : b);
   lots  = lots.map(l  => l.id  === lotId ? { ...l, status: 'unsold', soldTo: null, soldFor: null } : l);
-  teams = teams.map(t => t.id  === removingTeamId ? { ...t, spent: Math.max(0, (t.spent || 0) - amount) } : t);
+  const newSpent = Math.max(0, (teams.find(t => t.id === removingTeamId)?.spent || 0) - amount);
+  teams = teams.map(t => t.id  === removingTeamId ? { ...t, spent: newSpent } : t);
   saveAll();
   renderRemoveLotsList();
   renderOverspent();
   updateCountPills();
+  try {
+    await Promise.all([
+      MongoStore.updateOne('bids',  { id: bidId },        { $set: { status: 'removed' } }),
+      MongoStore.updateOne('lots',  { id: lotId },        { $set: { status: 'unsold', soldTo: null, soldFor: null } }),
+      MongoStore.updateOne('teams', { id: removingTeamId }, { $set: { spent: newSpent } }),
+    ]);
+  } catch (_) {}
   toast('Lot removed — ₹' + Number(amount).toLocaleString() + ' refunded');
 }
 
 
 // ════════════════════════════════════════════════════════════════
-// MODALS — close on cancel / backdrop click / Escape
+// MODALS
 // ════════════════════════════════════════════════════════════════
 document.querySelectorAll('.modal-cancel').forEach(btn => {
   btn.addEventListener('click', () => btn.closest('.modal-overlay').classList.add('hidden'));
@@ -963,7 +1050,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
   }
-  // Keyboard shortcuts when not in an input
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === ' ') {
     e.preventDefault();

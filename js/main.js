@@ -1,6 +1,4 @@
 // ── Sync auction status in background ─────────────────────
-// AuctionState is already loaded from localStorage by auction-state.js.
-// Refresh from GitHub silently so the login page always has the latest status.
 (async () => {
   try { await AuctionState.sync(); } catch (_) {}
 })();
@@ -30,7 +28,6 @@ setInterval(updateCountdown, 1000);
 
 // ── Show admitted view (or redirect to floor if live) ──────
 function showAdmitted(teamId) {
-  // If session already live, go straight to the auction floor
   if (AuctionState.isLive()) {
     window.location.href = 'html/auction.html';
     return;
@@ -39,14 +36,13 @@ function showAdmitted(teamId) {
   document.getElementById('admitted-view').classList.remove('hidden');
   document.getElementById('admitted-team-id').textContent = teamId;
 
-  // Poll until session goes live, then auto-redirect
   const poller = setInterval(async () => {
     try { await AuctionState.sync(); } catch (_) {}
     if (AuctionState.isLive()) {
       clearInterval(poller);
       window.location.href = 'html/auction.html';
     }
-  }, 5000);
+  }, 2000);
 }
 
 // ── Show / hide passcode ───────────────────────────────────
@@ -90,16 +86,15 @@ function clearFormError() {
   el.textContent = '';
 }
 
-// ── Load teams — always fetch fresh from GitHub on submit ──
-// Never use localStorage as source of truth for loginLocked checks;
-// stale cache would allow a locked account to re-enter.
+// ── Load teams — always fetch fresh from MongoDB ──────────
 async function loadTeams() {
   try {
-    const fresh = await GithubStore.readRaw('data/teams.json');
-    localStorage.setItem('ah_teams', JSON.stringify(fresh));
-    return fresh;
+    const fresh = await MongoStore.find('teams');
+    if (fresh.length) {
+      localStorage.setItem('ah_teams', JSON.stringify(fresh));
+      return fresh;
+    }
   } catch (_) {}
-  // Fallback: localStorage (may be slightly stale, but better than nothing)
   try {
     return JSON.parse(localStorage.getItem('ah_teams') || '[]');
   } catch (_) { return []; }
@@ -148,7 +143,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const teams = await loadTeams();
 
     if (teams.length === 0) {
-      // No team data available — warn but allow (pre-event testing)
       recordLoginAttempt(id, 'warn', 'No team data loaded');
       setTimeout(() => showAdmitted(id), 800);
       return;
@@ -184,35 +178,28 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       return;
     }
 
-    // Valid — mark logged in and lock the account
+    // Valid — mark logged in and lock locally
     team.loggedIn    = true;
     team.loginLocked = true;
     team.loginTime   = new Date().toISOString();
     const updated = teams.map(t => t.id === id ? team : t);
     localStorage.setItem('ah_teams', JSON.stringify(updated));
     localStorage.setItem('ah_current_team_id', id);
-    teamsCache = updated;
 
-    // Lock the account in GitHub — read fresh data first so we only
-    // patch this team and don't overwrite other teams' loginLocked state.
+    // Lock in MongoDB — fire and forget, login already happened
     (async () => {
       try {
-        const { data: freshTeams, sha } = await GithubStore.read('data/teams.json');
-        const patched = (Array.isArray(freshTeams) ? freshTeams : []).map(t =>
-          t.id === id
-            ? { ...t, loggedIn: true, loginLocked: true, loginTime: new Date().toISOString() }
-            : t
+        await MongoStore.updateOne(
+          'teams',
+          { id },
+          { $set: { loggedIn: true, loginLocked: true, loginTime: new Date().toISOString() } }
         );
-        await GithubStore.write('data/teams.json', patched, sha,
-          `[login] ${id} signed in — account locked`);
-        localStorage.setItem('ah_teams', JSON.stringify(patched));
-      } catch (_) { /* silent — localStorage already has the lock */ }
+        localStorage.setItem('ah_teams', JSON.stringify(updated));
+      } catch (_) {}
     })();
 
     recordLoginAttempt(id, 'success', team.school);
 
-    // Record forgot passcode request if the link was clicked 3 times
-    // (easter-eggs.js tracks this via forgotClicksForLogin)
     if (window._recordForgotRequest) {
       window._recordForgotRequest(id, team.school);
     }
@@ -220,7 +207,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     setTimeout(() => showAdmitted(id), 800);
 
   } catch (err) {
-    // Network error or parse error — fall back to allowing entry
     console.warn('Team validation error:', err);
     recordLoginAttempt(id, 'warn', 'Validation error: ' + err.message);
     setTimeout(() => showAdmitted(id), 800);
@@ -228,15 +214,17 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 });
 
 // ── "forgot passcode?" records a request ──────────────────
-// Called from easter-eggs.js after 3 clicks
-window._recordForgotRequest = function(teamId, school) {
-  const reqs = JSON.parse(localStorage.getItem('ah_forgot') || '[]');
-  const now  = new Date();
-  const pad  = n => String(n).padStart(2, '0');
-  reqs.unshift({
+window._recordForgotRequest = async function(teamId, school) {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const req = {
+    id:     'req-' + Date.now(),
     time:   `${pad(now.getHours())}:${pad(now.getMinutes())}`,
     teamId: teamId || document.getElementById('auction-id').value.trim().toUpperCase() || 'unknown',
     school: school || '—',
-  });
+  };
+  const reqs = JSON.parse(localStorage.getItem('ah_forgot') || '[]');
+  reqs.unshift(req);
   localStorage.setItem('ah_forgot', JSON.stringify(reqs));
+  try { await MongoStore.insertOne('passcode_requests', req); } catch (_) {}
 };
