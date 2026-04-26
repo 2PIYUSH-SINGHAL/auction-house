@@ -617,6 +617,28 @@ body {
   margin-bottom: 28px;
 }
 
+.admitted-enter-btn {
+  display: inline-block;
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #3a2a1a;
+  background: transparent;
+  border: 1.5px solid rgba(58, 42, 26, 0.45);
+  padding: 11px 24px;
+  text-decoration: none;
+  margin: 18px auto 28px;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.admitted-enter-btn:hover {
+  background: rgba(58, 42, 26, 0.08);
+  border-color: rgba(58, 42, 26, 0.7);
+}
+
+.admitted-enter-btn em { font-style: normal; }
+
 .admitted-divider {
   width: 60px;
   border: none;

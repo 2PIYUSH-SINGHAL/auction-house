@@ -28,11 +28,25 @@ function updateCountdown() {
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
-// ── Show admitted view ─────────────────────────────────────
+// ── Show admitted view (or redirect to floor if live) ──────
 function showAdmitted(teamId) {
+  // If session already live, go straight to the auction floor
+  if (AuctionState.isLive()) {
+    window.location.href = 'html/auction.html';
+    return;
+  }
   document.getElementById('login-view').classList.add('hidden');
   document.getElementById('admitted-view').classList.remove('hidden');
   document.getElementById('admitted-team-id').textContent = teamId;
+
+  // Poll until session goes live, then auto-redirect
+  const poller = setInterval(async () => {
+    try { await AuctionState.sync(); } catch (_) {}
+    if (AuctionState.isLive()) {
+      clearInterval(poller);
+      window.location.href = 'html/auction.html';
+    }
+  }, 5000);
 }
 
 // ── Show / hide passcode ───────────────────────────────────
@@ -182,6 +196,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     team.loginTime   = new Date().toISOString();
     const updated = teams.map(t => t.id === id ? team : t);
     localStorage.setItem('ah_teams', JSON.stringify(updated));
+    localStorage.setItem('ah_current_team_id', id);
     teamsCache = updated;
 
     // Push updated lock state to GitHub so it persists across devices

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Auction Floor — hack.welham</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Special+Elite&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/auction.css">
+</head>
+<body>
+
+  <!-- ══ SESSION ENDED ══════════════════════════════════════ -->
+  <div id="session-ended" class="session-ended hidden">
+    <div class="ended-card">
+      <div class="ended-stamp">SESSION<br>CLOSED</div>
+      <div class="ended-eyebrow">⌁ the hammer has fallen ⌁</div>
+      <h1 class="ended-heading">Thank you for <em>bidding.</em></h1>
+      <p class="ended-body">
+        The auction is now closed. The auctioneer will confirm the final results shortly.<br>
+        Keep an eye on your team channel for updates.
+      </p>
+      <div class="ended-team" id="ended-team-id"></div>
+      <div class="ended-note">§ &nbsp;Results will be announced by the auctioneer &nbsp;§</div>
+    </div>
+  </div>
+
+  <!-- ══ WAITING (session not open yet) ═════════════════════ -->
+  <div id="session-waiting" class="session-waiting hidden">
+    <div class="waiting-card">
+      <div class="waiting-eyebrow">⌁ stand by ⌁</div>
+      <h1 class="waiting-heading">Doors are <em>closed.</em></h1>
+      <p class="waiting-body">
+        The auction hasn't opened yet. This page will update automatically
+        once the auctioneer opens the floor.
+      </p>
+      <div class="waiting-team" id="waiting-team-id"></div>
+      <div class="waiting-pulse">
+        <span class="waiting-dot"></span> Waiting for session to go live…
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ AUCTION BODY ════════════════════════════════════════ -->
+  <div id="auction-body" class="hidden">
+
+    <!-- HEADER -->
+    <header class="auction-header">
+      <div class="ah-brand">
+        <div class="ah-crest">
+          <img src="../assets/welham-crest.png" alt="Welham crest">
+        </div>
+        <div>
+          <div class="ah-brand-label">hack.welham · Auction Hall</div>
+          <div class="ah-brand-name">The Auction <em>Floor</em></div>
+        </div>
+      </div>
+
+      <div class="ah-live-badge">
+        <span class="ah-live-dot"></span>
+        <span class="ah-live-label">Live</span>
+      </div>
+
+      <div class="ah-team-info">
+        <div class="ah-team-school" id="team-school">—</div>
+        <div class="ah-team-row">
+          <span class="ah-team-id" id="team-id-display">—</span>
+          <span class="ah-balance-label">Balance</span>
+          <span class="ah-balance" id="team-balance">₹ —</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- SEARCH BAR -->
+    <div class="search-bar-wrap">
+      <div class="search-bar-inner">
+        <div class="search-icon">⌕</div>
+        <input
+          type="search"
+          id="lot-search"
+          class="lot-search-input"
+          placeholder="Search lots by name or description…"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <div class="lot-count-tag" id="lot-count-tag"></div>
+      </div>
+    </div>
+
+    <!-- LOT GRID -->
+    <div class="lot-grid-wrap">
+      <div id="lot-grid" class="lot-grid">
+        <div class="lot-empty">Loading lots…</div>
+      </div>
+    </div>
+
+  </div><!-- end #auction-body -->
+
+
+  <!-- ══ BID MODAL ═════════════════════════════════════════ -->
+  <div id="bid-modal" class="bid-overlay hidden">
+    <div class="bid-card">
+      <div class="bid-eyebrow">⌁ place your bid ⌁</div>
+      <div class="bid-lot-id" id="bid-lot-id">LOT-000</div>
+      <div class="bid-lot-title" id="bid-lot-title">—</div>
+      <div class="bid-lot-desc" id="bid-lot-desc"></div>
+
+      <div class="bid-meta-row">
+        <div class="bid-meta-item">
+          <div class="bid-meta-label">Current bid</div>
+          <div class="bid-meta-val" id="bid-current">₹ —</div>
+        </div>
+        <div class="bid-meta-item">
+          <div class="bid-meta-label">Your balance</div>
+          <div class="bid-meta-val" id="bid-balance">₹ —</div>
+        </div>
+      </div>
+
+      <form id="bid-form" novalidate>
+        <div class="bid-field">
+          <label class="bid-field-label">
+            Your Bid
+            <span class="bid-min-note" id="bid-min-note">— min ₹ —</span>
+          </label>
+          <div class="bid-input-wrap">
+            <span class="bid-rupee">₹</span>
+            <input
+              type="number"
+              id="bid-amount"
+              class="bid-input"
+              min="1"
+              step="1"
+              placeholder="0"
+              autocomplete="off"
+            >
+          </div>
+        </div>
+
+        <div id="bid-error" class="bid-error hidden"></div>
+
+        <div class="bid-actions">
+          <button type="submit" id="bid-submit" class="bid-submit-btn">
+            Place Bid <em>↗</em>
+          </button>
+          <button type="button" id="bid-cancel" class="bid-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/github-store.js"></script>
+  <script src="../js/auction-state.js"></script>
+  <script src="../js/auction.js"></script>
+</body>
+</html>
