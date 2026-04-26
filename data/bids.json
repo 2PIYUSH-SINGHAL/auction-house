@@ -1,5 +1,14 @@
 [
   {
+    "id": "bid-1777219986715",
+    "teamId": "WBS-A-0002",
+    "lotId": "lot-1777219871948",
+    "lotTitle": "food",
+    "amount": 100,
+    "status": "pending",
+    "time": "21:43:06"
+  },
+  {
     "id": "bid-1777219837232",
     "teamId": "WBS-A-0002",
     "lotId": "lot-1777218113946",
