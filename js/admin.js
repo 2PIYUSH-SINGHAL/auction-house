@@ -33,12 +33,12 @@ let acLog      = ls('ah_auctioneer_log', []);
 const shas = {};
 
 function saveAll() {
-  lsSet('ah_teams',         teams);
-  lsSet('ah_lots',          lots);
-  lsSet('ah_bids',          bids);
-  lsSet('ah_loginlogs',     loginLogs);
-  lsSet('ah_forgot',        forgotReqs);
-  lsSet('ah_auctioneer_log', acLog);
+  lsSet('ah_teams', teams);
+  lsSet('ah_lots',  lots);
+  lsSet('ah_bids',  bids);
+  // loginLogs, forgotReqs, acLog are excluded — they manage their own
+  // localStorage reads/writes and must not be overwritten with a stale
+  // in-memory snapshot taken at page-load time
 }
 
 
