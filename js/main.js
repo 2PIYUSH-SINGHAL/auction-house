@@ -203,8 +203,10 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
 
   } catch (err) {
     console.warn('Team validation error:', err);
-    recordLoginAttempt(id, 'warn', 'Validation error: ' + err.message);
-    setTimeout(() => showAdmitted(id), 800);
+    recordLoginAttempt(id, 'fail', 'DB unreachable: ' + err.message);
+    showFormError('Cannot connect to database. Try again or contact the auctioneer.');
+    btn.textContent = 'Enter the hall ↗';
+    btn.disabled = false;
   }
 });
 
