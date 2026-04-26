@@ -52,10 +52,18 @@ window.MongoStore = (() => {
     // ── Read ───────────────────────────────────────────────────
 
     async find(collection) {
-      const data = await req('GET', `${colUrl(collection)}?pagesize=1000`);
-      if (!data) return [];
-      const arr = Array.isArray(data) ? data : (data._embedded || []);
-      return arr.map(clean);
+      const results = [];
+      let page = 1;
+      while (true) {
+        const data = await req('GET', `${colUrl(collection)}?pagesize=100&page=${page}`);
+        if (!data) break;
+        const arr = Array.isArray(data) ? data : (data._embedded || []);
+        if (!arr.length) break;
+        results.push(...arr.map(clean));
+        if (arr.length < 100) break;
+        page++;
+      }
+      return results;
     },
 
     // id: string — the document's id field (used as _id in RESTHeart)
