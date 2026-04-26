@@ -6,7 +6,15 @@
     "desc": "apples",
     "floor": 100,
     "status": "pending",
-    "currentBid": 1000,
+    "currentBid": 100,
     "currentBidder": "WBS-A-0002"
+  },
+  {
+    "id": "lot-1777219871948",
+    "num": "02",
+    "title": "food",
+    "desc": "food",
+    "floor": 1,
+    "status": "pending"
   }
 ]
