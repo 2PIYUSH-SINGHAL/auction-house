@@ -254,52 +254,50 @@ async function submitBid() {
   renderLots();
   closeBid();
 
-  // Write to GitHub — read fresh SHAs first to avoid conflicts
+  // Write bids.json then lots.json — sequential (not concurrent) so a
+  // conflict on one doesn't leave the other in an inconsistent state.
+  // writeRetry re-reads the current SHA and retries up to 4× on conflict.
+  const bid = {
+    id:       'bid-' + Date.now(),
+    teamId,
+    lotId:    lot.id,
+    lotTitle: lot.title,
+    amount,
+    status:   'pending',
+    time:     nowTime(),
+  };
+
   try {
-    const [{ data: freshLots, sha: lSha }, { data: freshBidsData, sha: bSha }] =
-      await Promise.all([
-        GithubStore.read('data/lots.json'),
-        GithubStore.read('data/bids.json').catch(() => ({ data: [], sha: null })),
-      ]);
+    // 1. Append bid to bids.json
+    const { data: savedBids } = await GithubStore.writeRetry(
+      'data/bids.json',
+      current => [bid, ...(Array.isArray(current) ? current : [])],
+      `[bid] ${teamId} — ${lot.title} ₹${amount}`
+    );
+    ghBids = savedBids;
 
-    lotsSha = lSha;
-    bidsSha = bSha;
-
-    // Merge our optimistic bid into the freshly-read lots
-    const updatedLots = (Array.isArray(freshLots) ? freshLots : []).map(l =>
-      l.id === lot.id
-        ? { ...l, currentBid: amount, currentBidder: teamId }
-        : l
+    // 2. Update lot's currentBid in lots.json — only if this bid is
+    //    still higher than whatever is now in GitHub (another team may
+    //    have outbid between our read and write).
+    const { data: savedLots } = await GithubStore.writeRetry(
+      'data/lots.json',
+      current => (Array.isArray(current) ? current : []).map(l => {
+        if (l.id !== lot.id) return l;
+        // Only take this bid if it is genuinely the highest
+        const ghBid = l.currentBid || 0;
+        return amount >= ghBid
+          ? { ...l, currentBid: amount, currentBidder: teamId }
+          : l; // someone else bid higher while we were writing
+      }),
+      `[bid] ${teamId} — ${lot.title} ₹${amount}`
     );
 
-    const bid = {
-      id:       'bid-' + Date.now(),
-      teamId,
-      lotId:    lot.id,
-      lotTitle: lot.title,
-      amount,
-      status:   'pending',
-      time:     nowTime(),
-    };
-
-    const updatedBids = [bid, ...(Array.isArray(freshBidsData) ? freshBidsData : [])];
-
-    // Write both files concurrently
-    const [newLotSha, newBidSha] = await Promise.all([
-      GithubStore.write('data/lots.json', updatedLots, lotsSha,
-        `[bid] ${teamId} — ${lot.title} ₹${amount}`),
-      GithubStore.write('data/bids.json', updatedBids, bidsSha,
-        `[bid] ${teamId} — ${lot.title} ₹${amount}`),
-    ]);
-
-    lots    = updatedLots;
-    lotsSha = newLotSha;
-    bidsSha = newBidSha;
+    lots = savedLots;
     renderLots();
     updateLastSync();
   } catch (e) {
-    // Show error but keep the optimistic UI — poll will correct it
-    errEl.textContent = 'Bid recorded locally but GitHub sync failed. The auctioneer can see it.';
+    errEl.textContent = 'Could not sync bid to GitHub after several retries. ' +
+      'Your bid was recorded locally — tell the auctioneer.';
     errEl.classList.remove('hidden');
     document.getElementById('bid-modal').classList.remove('hidden');
   } finally {

@@ -108,5 +108,33 @@ window.GithubStore = (() => {
       const result = await res.json();
       return result.content.sha; // new sha after commit
     },
+
+    /* writeRetry — reads fresh SHA, applies transform(currentData),
+       then writes. Retries up to maxRetries times on SHA conflict (409/422).
+       transform receives the current parsed array/object from GitHub and
+       must return the new value to write.
+       Returns { data, sha } of the committed result. */
+    async writeRetry(path, transform, message, maxRetries = 4) {
+      let lastErr;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const { data: current, sha } = await this.read(path);
+          const updated = transform(current);
+          const newSha  = await this.write(path, updated, sha, message);
+          return { data: updated, sha: newSha };
+        } catch (e) {
+          lastErr = e;
+          // Only retry on conflict errors
+          const isConflict = e.message.includes('409') ||
+                             e.message.includes('422') ||
+                             e.message.includes('conflict') ||
+                             e.message.includes('does not match');
+          if (!isConflict || attempt === maxRetries - 1) throw e;
+          // Exponential back-off: 400 ms, 800 ms, 1200 ms …
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+      throw lastErr;
+    },
   };
 })();

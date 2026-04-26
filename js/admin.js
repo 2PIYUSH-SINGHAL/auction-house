@@ -70,10 +70,9 @@ async function syncWrite(path, data, localKey, msg) {
   if (!GithubStore.hasToken()) return;
   try {
     setSyncStatus('Syncing…');
-    // Always read current SHA before writing — cached SHA may be stale
-    const { sha } = await GithubStore.read(path);
-    const newSha = await GithubStore.write(path, data, sha, msg);
-    shas[path] = newSha;
+    // writeRetry re-reads the current SHA each attempt — no stale SHA failures
+    const { sha } = await GithubStore.writeRetry(path, () => data, msg);
+    shas[path] = sha;
     setSyncStatus('Synced ' + nowTime(), true);
   } catch (e) {
     setSyncStatus('Sync failed: ' + e.message, false);
@@ -89,32 +88,28 @@ async function syncWriteTeamsSafe(msg, unlockId = null) {
   if (!GithubStore.hasToken()) return;
   try {
     setSyncStatus('Syncing…');
-    const { data: fresh, sha } = await GithubStore.read('data/teams.json');
-    const freshMap = {};
-    (Array.isArray(fresh) ? fresh : []).forEach(t => { freshMap[t.id] = t; });
-
-    const merged = teams.map(lt => {
-      const ft = freshMap[lt.id];
-      if (!ft) return lt; // new team added by admin, no conflict
-      if (lt.id === unlockId) {
-        // Explicit unlock: admin's version is authoritative
-        return lt;
-      }
-      // For all other writes, preserve login state from GitHub so we never
-      // accidentally clear a loginLocked that was set by a team signing in.
-      return {
-        ...lt,
-        loggedIn:    ft.loggedIn    || lt.loggedIn,
-        loginLocked: ft.loginLocked || lt.loginLocked,
-        loginTime:   ft.loginTime   || lt.loginTime,
-      };
-    });
-
-    teams = merged;
+    const { data: result, sha } = await GithubStore.writeRetry(
+      'data/teams.json',
+      (fresh) => {
+        const freshMap = {};
+        (Array.isArray(fresh) ? fresh : []).forEach(t => { freshMap[t.id] = t; });
+        return teams.map(lt => {
+          const ft = freshMap[lt.id];
+          if (!ft || lt.id === unlockId) return lt; // new team or explicit unlock
+          // Preserve login state from GitHub — never accidentally clear a lock
+          return {
+            ...lt,
+            loggedIn:    ft.loggedIn    || lt.loggedIn,
+            loginLocked: ft.loginLocked || lt.loginLocked,
+            loginTime:   ft.loginTime   || lt.loginTime,
+          };
+        });
+      },
+      msg
+    );
+    teams = result;
     lsSet('ah_teams', teams);
-
-    const newSha = await GithubStore.write('data/teams.json', merged, sha, msg);
-    shas['data/teams.json'] = newSha;
+    shas['data/teams.json'] = sha;
     setSyncStatus('Synced ' + nowTime(), true);
   } catch (e) {
     setSyncStatus('Sync failed: ' + e.message, false);
