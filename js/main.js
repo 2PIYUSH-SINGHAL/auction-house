@@ -1,3 +1,10 @@
+// ── Sync auction status in background ─────────────────────
+// AuctionState is already loaded from localStorage by auction-state.js.
+// Refresh from GitHub silently so the login page always has the latest status.
+(async () => {
+  try { await AuctionState.sync(); } catch (_) {}
+})();
+
 // ── Countdown ─────────────────────────────────────────────
 const AUCTION_TIME = new Date('2026-07-31T21:00:00+05:30').getTime();
 

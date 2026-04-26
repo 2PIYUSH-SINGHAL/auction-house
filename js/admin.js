@@ -20,7 +20,8 @@ function ls(key, def) {
 function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
 // ── State ──────────────────────────────────────────────────────
-let sessionState = 'waiting';
+// sessionState is a convenience alias — AuctionState.status is authoritative
+let sessionState = AuctionState.status;
 let teams      = ls('ah_teams',        []);
 let lots       = ls('ah_lots',         []);
 let bids       = ls('ah_bids',         []);
@@ -86,6 +87,10 @@ async function initData() {
     lots       = await syncRead('data/lots.json',              'ah_lots',         lots);
     forgotReqs = await syncRead('data/passcode-requests.json', 'ah_forgot',       forgotReqs);
     acLog      = await syncRead('data/auctioneer-log.json',    'ah_auctioneer_log', acLog);
+    // Sync auction status — updates AuctionState global and caches SHA for writes
+    shas['data/auction.json'] = await AuctionState.sync();
+    sessionState = AuctionState.status;
+    setSession(sessionState);           // apply synced status to UI
     setSyncStatus('Loaded ' + nowTime(), true);
   } catch (e) {
     setSyncStatus('Offline — using local data', null);
@@ -174,6 +179,11 @@ const sessionPill = document.getElementById('nav-session-pill');
 
 function setSession(state) {
   sessionState = state;
+  // Keep global in sync and persist to localStorage + GitHub
+  AuctionState.status = state;
+  AuctionState.persist(shas['data/auction.json'])
+    .then(newSha => { if (newSha) shas['data/auction.json'] = newSha; });
+
   statusDot.className  = 'status-dot';
   statusText.className = 'status-text';
   sessionPill.className = 'status-pill';
@@ -240,7 +250,7 @@ function renderStats() {
   document.getElementById('stat-raised').textContent = '₹ ' + raised.toLocaleString();
 }
 
-setSession('waiting');
+setSession(AuctionState.status); // restore UI from last known state on load
 
 // ── Live bid feed ──────────────────────────────────────────────
 function renderLiveFeed() {
