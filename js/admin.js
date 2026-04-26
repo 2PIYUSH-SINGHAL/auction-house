@@ -103,33 +103,9 @@ async function initData() {
   updateCountPills();
 }
 
-// Seed database from local JSON files (one-time setup)
-async function seedFromJson() {
-  if (!confirm('Seed database from data/teams.json and data/lots.json?\nThis will overwrite existing teams and lots.')) return;
-  setSyncStatus('Seeding…');
-  try {
-    const [teamsData, lotsData] = await Promise.all([
-      fetch('../data/teams.json').then(r => r.json()),
-      fetch('../data/lots.json').then(r => r.json()),
-    ]);
-    await MongoStore.replaceAll('teams', teamsData);
-    await MongoStore.replaceAll('lots',  lotsData);
-    await MongoStore.insertOne('auction', {
-      id: 'session', status: 'waiting', sessionNum: 1,
-      date: '31 Jul 2026', startTime: '21:00 IST', currentLot: null,
-    });
-    teams = teamsData; lsSet('ah_teams', teams);
-    lots  = lotsData;  lsSet('ah_lots',  lots);
-    renderTeams(); renderLots(); renderStats(); updateCountPills();
-    setSyncStatus('Seeded ' + nowTime(), true);
-    toast('Database seeded — ' + teamsData.length + ' teams, ' + lotsData.length + ' lots');
-  } catch (e) {
-    setSyncStatus('Seed failed: ' + e.message, false);
-    toast('Seed failed: ' + e.message);
-  }
-}
-
-document.getElementById('btn-seed-db').addEventListener('click', seedFromJson);
+document.getElementById('btn-seed-db').addEventListener('click', () => {
+  toast('No seed file — add teams and lots manually using the panels.');
+});
 
 // Test connection button
 document.getElementById('btn-test-connection').addEventListener('click', async () => {
@@ -474,14 +450,23 @@ document.getElementById('form-lot').addEventListener('submit', async e => {
     status: editId ? (lots.find(l => l.id === editId)?.status || 'pending') : 'pending',
   };
   if (!data.title) return;
-  lots = editId ? lots.map(l => l.id === editId ? data : l) : [...lots, data];
-  saveAll();
-  renderLots();
-  document.getElementById('modal-lot').classList.add('hidden');
+
+  const submitBtn = e.target.querySelector('button[type=submit]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving…';
   try {
-    await MongoStore.insertOne('lots', data); // PUT upserts by id whether new or edit
-  } catch (_) {}
-  toast(editId ? 'Lot updated' : 'Lot added');
+    await MongoStore.insertOne('lots', data);
+    lots = editId ? lots.map(l => l.id === editId ? data : l) : [...lots, data];
+    saveAll();
+    renderLots();
+    document.getElementById('modal-lot').classList.add('hidden');
+    toast(editId ? 'Lot updated' : 'Lot added');
+  } catch (err) {
+    toast('Failed to save lot: ' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = editId ? 'Save changes' : 'Add lot';
+  }
 });
 
 
@@ -726,16 +711,23 @@ document.getElementById('form-team').addEventListener('submit', async e => {
   if (!id || !school) return;
   if (teams.find(t => t.id === id)) { toast('Team ID already exists'); return; }
   const team = { id, school, passcode: pass, balance, spent: 0, loggedIn: false, loginLocked: false, loginTime: null };
-  teams.push(team);
-  saveAll();
-  renderTeams();
-  updateCountPills();
-  document.getElementById('modal-team').classList.add('hidden');
+
+  const submitBtn = e.target.querySelector('button[type=submit]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Adding…';
   try {
     await MongoStore.insertOne('teams', team);
+    teams.push(team);
+    saveAll();
+    renderTeams();
+    updateCountPills();
+    document.getElementById('modal-team').classList.add('hidden');
     toast('Team added');
-  } catch (e) {
-    toast('Team saved locally — DB sync failed: ' + e.message);
+  } catch (err) {
+    toast('Failed to add team: ' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Add team';
   }
 });
 
