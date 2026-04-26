@@ -176,14 +176,119 @@ body {
   color: #e07060;
 }
 
-.sidebar-clock {
-  padding: 14px 18px;
+.sidebar-bottom {
   border-top: 1px solid rgba(168, 98, 47, 0.2);
+  padding: 10px 0 0;
+}
+
+.sidebar-settings-btn {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 9px 18px;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(234, 223, 199, 0.35);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+}
+.sidebar-settings-btn:hover { color: #a8622f; }
+
+.sidebar-sync {
+  padding: 4px 18px 8px;
+  font-family: "Special Elite", monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: rgba(234, 223, 199, 0.25);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-clock {
+  padding: 6px 18px 14px;
   font-family: "Special Elite", monospace;
   font-size: 12px;
   letter-spacing: 0.15em;
-  color: rgba(234, 223, 199, 0.3);
+  color: rgba(234, 223, 199, 0.25);
   text-align: center;
+}
+
+/* ── Live feed ────────────────────────────────────────── */
+.feed-list {
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 98, 47, 0.3) transparent;
+}
+
+.feed-list::-webkit-scrollbar { width: 4px; }
+.feed-list::-webkit-scrollbar-thumb { background: rgba(168, 98, 47, 0.3); }
+
+.feed-empty {
+  font-family: "Caveat", cursive;
+  font-size: 18px;
+  color: rgba(234, 223, 199, 0.2);
+  padding: 18px 0;
+}
+
+@keyframes feed-in {
+  from { opacity: 0; translate: 0 5px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+
+.feed-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(168, 98, 47, 0.08);
+  animation: feed-in 0.25s ease both;
+  flex-wrap: wrap;
+}
+
+.feed-item:last-child { border-bottom: none; }
+
+.feed-time {
+  font-family: "Special Elite", monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: rgba(234, 223, 199, 0.25);
+  flex-shrink: 0;
+  min-width: 52px;
+}
+
+.feed-team {
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #eadfc7;
+  flex-shrink: 0;
+}
+
+.feed-arrow {
+  color: rgba(168, 98, 47, 0.5);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.feed-lot {
+  font-size: 13px;
+  color: rgba(234, 223, 199, 0.6);
+  flex: 1;
+  min-width: 80px;
+}
+
+.feed-amount {
+  font-family: "Special Elite", monospace;
+  font-size: 13px;
+  color: #a8622f;
+  flex-shrink: 0;
 }
 
 /* ════════════════════════════════════════════════════════

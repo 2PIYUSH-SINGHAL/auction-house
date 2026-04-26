@@ -90,19 +90,77 @@ acToggle.addEventListener('click', () => {
   acToggle.textContent = acPassVisible ? 'hide ⊘' : 'show ◉';
 });
 
+const AUCTIONEER_PASS = 'wbsauction';
+
+function showAcError(msg) {
+  const el = document.getElementById('ac-error');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  el.classList.add('error-shake');
+  el.addEventListener('animationend', () => el.classList.remove('error-shake'), { once: true });
+}
+
+function clearAcError() {
+  const el = document.getElementById('ac-error');
+  el.classList.add('hidden');
+  el.textContent = '';
+}
+
+function logAuctioneerLogin(name) {
+  const now  = new Date();
+  const pad  = n => String(n).padStart(2, '0');
+  const entry = {
+    name:  name.toUpperCase(),
+    time:  `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`,
+    date:  now.toLocaleDateString('en-IN'),
+    device: navigator.platform || 'unknown',
+  };
+  // Write to localStorage (admin panel reads from ah_auctioneer_log)
+  const logs = JSON.parse(localStorage.getItem('ah_auctioneer_log') || '[]');
+  logs.unshift(entry);
+  localStorage.setItem('ah_auctioneer_log', JSON.stringify(logs));
+  // Also add to login logs so admin sees it in Login Logs section
+  const loginLogs = JSON.parse(localStorage.getItem('ah_loginlogs') || '[]');
+  loginLogs.unshift({
+    time:   entry.time,
+    teamId: 'AUCTIONEER',
+    status: 'auctioneer',
+    device: entry.device,
+    note:   'Logged in as ' + entry.name,
+  });
+  localStorage.setItem('ah_loginlogs', JSON.stringify(loginLogs));
+}
+
 // Auctioneer form submit
 document.getElementById('auctioneer-form').addEventListener('submit', (e) => {
   e.preventDefault();
+  clearAcError();
   const name = document.getElementById('auctioneer-name').value.trim();
   const pass = acPassInput.value.trim();
-  if (!name || !pass) {
-    if (!name) document.getElementById('auctioneer-name').focus();
-    else       acPassInput.focus();
+
+  if (!name) {
+    showAcError('Please enter your name.');
+    document.getElementById('auctioneer-name').focus();
     return;
   }
+  if (!pass) {
+    showAcError('Please enter the auctioneer password.');
+    acPassInput.focus();
+    return;
+  }
+  if (pass !== AUCTIONEER_PASS) {
+    showAcError('Incorrect password.');
+    acPassInput.value = '';
+    acPassInput.focus();
+    return;
+  }
+
   const btn = document.getElementById('auctioneer-submit-btn');
   btn.textContent = 'Verifying…';
   btn.disabled = true;
+
+  logAuctioneerLogin(name);
+
   setTimeout(() => {
     closeAuctioneerView();
     sessionStorage.setItem('auctioneer_name', name.toUpperCase());

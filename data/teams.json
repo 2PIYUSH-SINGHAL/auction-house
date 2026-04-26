@@ -1,0 +1,29 @@
+[
+  {
+    "id": "WBS-A-0001",
+    "school": "Welham Boys School",
+    "passcode": "WBSAUC01",
+    "balance": 1000,
+    "spent": 0,
+    "loggedIn": false,
+    "loginTime": null
+  },
+  {
+    "id": "WBS-A-0002",
+    "school": "The Doon School",
+    "passcode": "DOONAUC2",
+    "balance": 1000,
+    "spent": 0,
+    "loggedIn": false,
+    "loginTime": null
+  },
+  {
+    "id": "WBS-A-0003",
+    "school": "Mayo College",
+    "passcode": "MAYOAUC3",
+    "balance": 1000,
+    "spent": 0,
+    "loggedIn": false,
+    "loginTime": null
+  }
+]

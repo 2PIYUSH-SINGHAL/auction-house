@@ -7,6 +7,41 @@
   <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Special+Elite&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    /* ── Login error message ── */
+    .login-error {
+      background: rgba(168, 98, 47, 0.12);
+      border: 1.5px solid rgba(168, 98, 47, 0.5);
+      color: #a8622f;
+      font-family: "Special Elite", monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    @keyframes error-shake {
+      0%,100% { translate: 0 0; }
+      20%     { translate: -6px 0; }
+      40%     { translate: 6px 0; }
+      60%     { translate: -4px 0; }
+      80%     { translate: 4px 0; }
+    }
+    .error-shake { animation: error-shake 0.35s ease both; }
+    /* ── Auctioneer error ── */
+    .ac-error {
+      background: rgba(200, 60, 40, 0.1);
+      border: 1px solid rgba(200, 60, 40, 0.4);
+      color: #e07060;
+      font-family: "Special Elite", monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 9px 12px;
+      margin-bottom: 16px;
+    }
+  </style>
 </head>
 <body>
 
@@ -146,6 +181,8 @@
             <a href="#" class="forgot-link">forgot passcode?</a>
           </div>
 
+          <div id="login-error" class="login-error hidden"></div>
+
           <button type="submit" class="submit-btn" id="submit-btn">
             Enter the hall <em>↗</em>
           </button>
@@ -230,6 +267,8 @@
           <input type="password" id="auctioneer-pass" class="ac-input" placeholder="••••••••" autocomplete="off">
         </div>
 
+        <div id="ac-error" class="ac-error hidden"></div>
+
         <button type="submit" class="ac-submit" id="auctioneer-submit-btn">
           Open the Hall <em>↗</em>
         </button>
@@ -239,6 +278,7 @@
     </div>
   </div>
 
+  <script src="js/github-store.js"></script>
   <script src="js/main.js"></script>
   <script src="js/easter-eggs.js"></script>
 </body>

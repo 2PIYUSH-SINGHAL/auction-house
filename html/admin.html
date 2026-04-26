@@ -44,6 +44,9 @@
         <span class="nav-icon">?</span> Passcode Requests
         <span class="count-pill" id="nav-forgot-count"></span>
       </li>
+      <li class="nav-item" data-section="ac-log">
+        <span class="nav-icon">⊕</span> Auctioneer Log
+      </li>
 
       <li class="nav-divider">After auction</li>
 
@@ -62,7 +65,11 @@
       </li>
     </ul>
 
-    <div class="sidebar-clock" id="live-clock">--:--:--</div>
+    <div class="sidebar-bottom">
+      <button class="sidebar-settings-btn" id="btn-gh-settings">⚙ GitHub sync</button>
+      <div class="sidebar-sync" id="sync-status">Not synced</div>
+      <div class="sidebar-clock" id="live-clock">--:--:--</div>
+    </div>
   </nav>
 
 
@@ -72,8 +79,10 @@
     <!-- ── 1. Session ───────────────────────────────────────── -->
     <section id="section-session" class="section active">
       <div class="section-header">
-        <h1 class="section-title">Start <em>Auction</em></h1>
-        <div class="section-sub">Session № 01 · 31 Jul 2026 · 21:00 IST</div>
+        <div>
+          <h1 class="section-title">Start <em>Auction</em></h1>
+          <div class="section-sub">Session № 01 · 31 Jul 2026 · 21:00 IST</div>
+        </div>
       </div>
 
       <div class="cards-row">
@@ -91,10 +100,8 @@
         </div>
 
         <div class="card">
-          <div class="card-eyebrow">§ Session info</div>
+          <div class="card-eyebrow">§ Session stats</div>
           <div class="info-grid">
-            <div class="info-item"><span class="info-label">Date</span><span class="info-val">31 Jul 2026</span></div>
-            <div class="info-item"><span class="info-label">Opens</span><span class="info-val">21:00 IST</span></div>
             <div class="info-item"><span class="info-label">Teams</span><span class="info-val" id="stat-teams">0</span></div>
             <div class="info-item"><span class="info-label">Lots</span><span class="info-val" id="stat-lots">0</span></div>
             <div class="info-item"><span class="info-label">Bids placed</span><span class="info-val" id="stat-bids">0</span></div>
@@ -102,20 +109,31 @@
           </div>
         </div>
       </div>
+
+      <!-- Live bidding feed -->
+      <div class="card" style="margin-top:24px">
+        <div class="card-eyebrow" style="display:flex;justify-content:space-between;align-items:center">
+          <span>§ Live bid feed</span>
+          <span id="feed-ping" style="font-size:9px;color:rgba(234,223,199,0.25)">auto-refresh every 3s</span>
+        </div>
+        <ul class="feed-list" id="live-feed">
+          <li class="feed-empty">No bids yet. Feed will update as bids are recorded.</li>
+        </ul>
+      </div>
     </section>
 
     <!-- ── 2. Lots ───────────────────────────────────────────── -->
     <section id="section-lots" class="section">
       <div class="section-header">
         <h1 class="section-title">Add <em>Items</em></h1>
-        <button class="btn btn-primary" id="btn-add-lot">+ Add lot</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" id="btn-sync-lots">↑ Sync to GitHub</button>
+          <button class="btn btn-primary" id="btn-add-lot">+ Add lot</button>
+        </div>
       </div>
-
       <div class="card">
-        <table class="data-table" id="lots-table">
-          <thead><tr>
-            <th>Lot №</th><th>Title</th><th>Description</th><th>Floor</th><th>Status</th><th></th>
-          </tr></thead>
+        <table class="data-table">
+          <thead><tr><th>Lot №</th><th>Title</th><th>Description</th><th>Floor</th><th>Status</th><th></th></tr></thead>
           <tbody id="lots-tbody"><tr><td colspan="6" class="empty-row">No lots added yet.</td></tr></tbody>
         </table>
       </div>
@@ -143,8 +161,8 @@
       </div>
       <div class="card">
         <table class="data-table">
-          <thead><tr><th>Time</th><th>Team ID</th><th>Status</th><th>Device</th></tr></thead>
-          <tbody id="logs-tbody"><tr><td colspan="4" class="empty-row">No login attempts recorded.</td></tr></tbody>
+          <thead><tr><th>Time</th><th>Team / User</th><th>Status</th><th>Note</th><th>Device</th></tr></thead>
+          <tbody id="logs-tbody"><tr><td colspan="5" class="empty-row">No login attempts recorded.</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -153,7 +171,10 @@
     <section id="section-teams" class="section">
       <div class="section-header">
         <h1 class="section-title">Teams &amp; <em>Passwords</em></h1>
-        <button class="btn btn-primary" id="btn-add-team">+ Add team</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" id="btn-sync-teams">↑ Sync to GitHub</button>
+          <button class="btn btn-primary" id="btn-add-team">+ Add team</button>
+        </div>
       </div>
       <div class="card">
         <table class="data-table">
@@ -177,7 +198,21 @@
       </div>
     </section>
 
-    <!-- ── 7. Unsold lots ────────────────────────────────────── -->
+    <!-- ── 7. Auctioneer login log ───────────────────────────── -->
+    <section id="section-ac-log" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Auctioneer <em>Log</em></h1>
+        <button class="btn btn-ghost" id="btn-clear-ac-log">Clear</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Time</th><th>Name</th><th>Device</th></tr></thead>
+          <tbody id="ac-log-tbody"><tr><td colspan="4" class="empty-row">No auctioneer logins recorded.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 8. Unsold lots ────────────────────────────────────── -->
     <section id="section-unsold" class="section">
       <div class="section-header">
         <h1 class="section-title">Unsold <em>Lots</em></h1>
@@ -190,7 +225,7 @@
       </div>
     </section>
 
-    <!-- ── 8. Restart ────────────────────────────────────────── -->
+    <!-- ── 9. Restart ────────────────────────────────────────── -->
     <section id="section-restart" class="section">
       <div class="section-header">
         <h1 class="section-title">Restart <em>Auction</em></h1>
@@ -198,7 +233,7 @@
       <div class="cards-row">
         <div class="card">
           <div class="card-eyebrow">§ Carry over unsold lots</div>
-          <p class="card-body-text">The following unsold lots will be included in the new round. You may also add new lots before restarting.</p>
+          <p class="card-body-text">Tick the lots to include in the new round, then restart.</p>
           <div id="restart-unsold-list" class="check-list"></div>
           <div class="btn-group" style="margin-top:20px">
             <button class="btn btn-primary" id="btn-restart-auction">Restart with selected lots</button>
@@ -223,7 +258,7 @@
       </div>
     </section>
 
-    <!-- ── 9. Overspent teams ────────────────────────────────── -->
+    <!-- ── 10. Overspent teams ───────────────────────────────── -->
     <section id="section-overspent" class="section">
       <div class="section-header">
         <h1 class="section-title">Overspent <em>Teams</em></h1>
@@ -236,11 +271,11 @@
       </div>
     </section>
 
-    <!-- ── 10. Remove lots ───────────────────────────────────── -->
+    <!-- ── 11. Remove lots ───────────────────────────────────── -->
     <section id="section-remove-lots" class="section">
       <div class="section-header">
         <h1 class="section-title">Remove <em>Lots</em></h1>
-        <div class="section-sub">Select a team and remove lots they can no longer afford.</div>
+        <div class="section-sub">Select an overspent team, then remove lots they cannot afford.</div>
       </div>
       <div class="cards-row">
         <div class="card" style="min-width:220px;flex:0 0 auto">
@@ -249,7 +284,7 @@
         </div>
         <div class="card" style="flex:1">
           <div class="card-eyebrow">§ Lots assigned to <span id="remove-target-name">—</span></div>
-          <table class="data-table" id="remove-lots-table">
+          <table class="data-table">
             <thead><tr><th>Lot №</th><th>Title</th><th>Bid amount</th><th></th></tr></thead>
             <tbody id="remove-lots-tbody"><tr><td colspan="4" class="empty-row">Select a team first.</td></tr></tbody>
           </table>
@@ -257,10 +292,31 @@
       </div>
     </section>
 
-  </main><!-- end .main -->
+  </main>
 
 
   <!-- ══ MODALS ══════════════════════════════════════════════════ -->
+
+  <!-- GitHub token setup -->
+  <div id="modal-gh" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">GitHub <em>Sync</em></div>
+      <p style="font-size:14px;color:rgba(234,223,199,0.5);margin-bottom:20px;line-height:1.6">
+        Enter a GitHub Personal Access Token with <code style="color:#a8622f;font-family:'Special Elite',monospace">repo</code> scope.
+        Changes will be committed to the <code style="color:#a8622f;font-family:'Special Elite',monospace">feature/data-layer</code> branch.
+        You can then <code style="color:#a8622f;font-family:'Special Elite',monospace">git pull</code> to fetch the latest data locally.
+      </p>
+      <div class="field-group">
+        <label class="field-label">Personal Access Token</label>
+        <input type="password" class="field-input" id="gh-token-input" placeholder="ghp_••••••••••••••••••••" autocomplete="off">
+      </div>
+      <div id="gh-token-status" style="font-family:'Special Elite',monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(234,223,199,0.3);margin-bottom:16px;min-height:16px"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btn-gh-save">Save &amp; test</button>
+        <button class="btn btn-ghost modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Add / edit lot -->
   <div id="modal-lot" class="modal-overlay hidden">
@@ -321,26 +377,26 @@
     </div>
   </div>
 
-  <!-- Edit team password / reset -->
+  <!-- Edit team -->
   <div id="modal-edit-team" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-title">Edit <em>team</em></div>
       <form id="form-edit-team" novalidate>
         <input type="hidden" id="edit-team-id">
-        <div class="card-eyebrow" id="edit-team-display" style="margin-bottom:16px;font-size:16px;color:#eadfc7"></div>
+        <div id="edit-team-display" style="font-family:'Special Elite',monospace;font-size:14px;letter-spacing:0.12em;color:#a8622f;margin-bottom:18px"></div>
         <div class="field-group">
-          <label class="field-label">New passcode</label>
-          <input type="text" class="field-input" id="edit-team-pass" placeholder="Leave blank to keep current" autocomplete="off">
+          <label class="field-label">New passcode <span style="opacity:0.4">(leave blank to keep)</span></label>
+          <input type="text" class="field-input" id="edit-team-pass" placeholder="••••••••" autocomplete="off">
         </div>
         <div class="field-group">
           <label class="field-label">Float (₹)</label>
-          <input type="number" class="field-input" id="edit-team-balance" placeholder="1000" min="0">
+          <input type="number" class="field-input" id="edit-team-balance" min="0">
         </div>
         <div class="field-group">
-          <label class="field-label" style="color:rgba(234,223,199,0.4)">Login status</label>
+          <label class="field-label">Login status</label>
           <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
             <span id="edit-login-status" style="font-family:'Special Elite',monospace;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#a8622f">—</span>
-            <button type="button" class="btn btn-ghost" id="btn-reset-login" style="padding:6px 14px;font-size:9px">Reset login</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-reset-login">Reset login</button>
           </div>
         </div>
         <div class="modal-footer">
@@ -384,6 +440,7 @@
     </div>
   </div>
 
+  <script src="../js/github-store.js"></script>
   <script src="../js/admin.js"></script>
 </body>
 </html>
