@@ -5,9 +5,9 @@
     "passcode": "WBSAUC01",
     "balance": 1000,
     "spent": 0,
-    "loggedIn": true,
-    "loginTime": "2026-04-26T15:41:14.680Z",
-    "loginLocked": true
+    "loggedIn": false,
+    "loginTime": null,
+    "loginLocked": false
   },
   {
     "id": "WBS-A-0002",
@@ -16,7 +16,8 @@
     "balance": 1000,
     "spent": 0,
     "loggedIn": false,
-    "loginTime": null
+    "loginTime": null,
+    "loginLocked": false
   },
   {
     "id": "WBS-A-0003",
@@ -25,6 +26,7 @@
     "balance": 1000,
     "spent": 0,
     "loggedIn": false,
-    "loginTime": null
+    "loginTime": null,
+    "loginLocked": false
   }
 ]
