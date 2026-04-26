@@ -5,9 +5,9 @@
     "passcode": "apple",
     "balance": 1000,
     "spent": 0,
-    "loggedIn": false,
-    "loginTime": null,
-    "loginLocked": false
+    "loggedIn": true,
+    "loginTime": "2026-04-26T16:03:53.323Z",
+    "loginLocked": true
   },
   {
     "id": "WBS-A-0002",
