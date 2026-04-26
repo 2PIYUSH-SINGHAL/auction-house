@@ -231,14 +231,99 @@ function unlockPostAuction(unlock) {
   document.querySelectorAll('.post-auction').forEach(el => el.classList.toggle('locked', !unlock));
 }
 
+// ── Test mode ──────────────────────────────────────────────────
+const testModeToggle = document.getElementById('test-mode-toggle');
+let testMode = localStorage.getItem('ah_test_mode') === 'true';
+testModeToggle.checked = testMode;
+
+testModeToggle.addEventListener('change', () => {
+  testMode = testModeToggle.checked;
+  localStorage.setItem('ah_test_mode', String(testMode));
+  updateStartLock();
+});
+
+// ── Admin countdown + auto-start/end ──────────────────────────
+const adminCdEl  = document.getElementById('admin-countdown');
+const adminCdSub = document.getElementById('admin-countdown-sub');
+const timerNote  = document.getElementById('session-timer-note');
+let autoEndTimer = null;
+
+function updateStartLock() {
+  const now = Date.now();
+  const ready = now >= AUCTION_START_MS;
+  if (testMode || ready || sessionState !== 'waiting') {
+    timerNote.classList.add('hidden');
+    if (sessionState === 'waiting') btnStart.disabled = false;
+  } else {
+    timerNote.textContent = '⌁ Auction not open yet — timer must reach zero or enable Test Mode ⌁';
+    timerNote.classList.remove('hidden');
+    btnStart.disabled = true;
+  }
+}
+
+function updateAdminCountdown() {
+  const diff = AUCTION_START_MS - Date.now();
+  if (diff <= 0) {
+    adminCdEl.textContent = '00:00:00';
+    adminCdEl.classList.add('zeroed');
+    adminCdSub.textContent = 'Doors are open';
+    updateStartLock();
+    // Auto-start exactly once when timer hits zero
+    if (!testMode && AuctionState.isWaiting()) {
+      autoStart();
+    }
+  } else {
+    adminCdEl.classList.remove('zeroed');
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    adminCdEl.textContent =
+      `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    updateStartLock();
+  }
+}
+
+function autoStart() {
+  if (!AuctionState.isWaiting()) return;
+  setSession('live');
+  toast('Auction opened automatically at 21:00 IST');
+  scheduleAutoEnd();
+}
+
+function scheduleAutoEnd() {
+  clearTimeout(autoEndTimer);
+  if (testMode) return;
+  const msUntilEnd = (AUCTION_START_MS + AUCTION_DURATION_MS) - Date.now();
+  if (msUntilEnd <= 0) return;
+  autoEndTimer = setTimeout(() => {
+    if (AuctionState.isLive()) {
+      setSession('closed');
+      toast('Auction closed automatically after 1 hour');
+    }
+  }, msUntilEnd);
+}
+
+// Re-schedule auto-end if we load the admin panel while the session is already live
+if (AuctionState.isLive()) scheduleAutoEnd();
+
+updateAdminCountdown();
+setInterval(updateAdminCountdown, 1000);
+
 btnStart.addEventListener('click', () => {
-  if (sessionState === 'waiting' || sessionState === 'paused') setSession('live');
+  if (sessionState === 'waiting' || sessionState === 'paused') {
+    setSession('live');
+    if (!testMode) scheduleAutoEnd();
+  }
 });
 btnPause.addEventListener('click', () => {
-  if (sessionState === 'live') setSession('paused');
+  if (sessionState === 'live') {
+    clearTimeout(autoEndTimer);
+    setSession('paused');
+  }
 });
 btnEnd.addEventListener('click', () => {
   if (!confirm('Close the session? Post-auction sections will unlock.')) return;
+  clearTimeout(autoEndTimer);
   setSession('closed');
 });
 

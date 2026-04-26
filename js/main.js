@@ -6,7 +6,7 @@
 })();
 
 // ── Countdown ─────────────────────────────────────────────
-const AUCTION_TIME = new Date('2026-07-31T21:00:00+05:30').getTime();
+const AUCTION_TIME = window.AUCTION_START_MS;
 
 function updateCountdown() {
   const diff = AUCTION_TIME - Date.now();

@@ -2,6 +2,11 @@
    AuctionState — global shared across login page and admin panel.
    status values: 'waiting' | 'live' | 'paused' | 'closed'
    ════════════════════════════════════════════════════════════════ */
+
+// Canonical auction schedule — shared by all pages
+window.AUCTION_START_MS = new Date('2026-07-31T21:00:00+05:30').getTime();
+window.AUCTION_DURATION_MS = 60 * 60 * 1000; // 1 hour
+
 window.AuctionState = (() => {
   const LS_KEY = 'ah_auction';
 

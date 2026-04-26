@@ -92,6 +92,7 @@
             <span class="status-dot" id="status-dot"></span>
             <span class="status-text" id="status-text">Waiting to open</span>
           </div>
+          <div id="session-timer-note" class="session-timer-note hidden"></div>
           <div class="btn-group">
             <button class="btn btn-primary" id="btn-start">Open session</button>
             <button class="btn btn-ghost"   id="btn-pause" disabled>Pause</button>
@@ -107,6 +108,26 @@
             <div class="info-item"><span class="info-label">Bids placed</span><span class="info-val" id="stat-bids">0</span></div>
             <div class="info-item"><span class="info-label">Total raised</span><span class="info-val" id="stat-raised">₹ 0</span></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Countdown + test mode -->
+      <div class="cards-row" style="margin-top:0">
+        <div class="card">
+          <div class="card-eyebrow">§ Opens in</div>
+          <div id="admin-countdown" class="admin-countdown">--:--:--</div>
+          <div id="admin-countdown-sub" class="admin-countdown-sub">31 Jul 2026 · 21:00 IST</div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">§ Test mode</div>
+          <div class="test-mode-row">
+            <label class="toggle-label" for="test-mode-toggle">
+              <input type="checkbox" id="test-mode-toggle">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-text">Allow early open &amp; skip auto-timers</span>
+            </label>
+          </div>
+          <div class="test-mode-note">When on: timer lock bypassed, auto-start &amp; auto-end disabled.</div>
         </div>
       </div>
 
