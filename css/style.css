@@ -1,0 +1,1862 @@
+/* ── Reset & base ─────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #eadfc7;
+  background-image: repeating-linear-gradient(
+    transparent 0px,
+    transparent 27px,
+    rgba(58, 42, 26, 0.1) 27px,
+    rgba(58, 42, 26, 0.1) 28px
+  );
+  font-family: "IM Fell English", Georgia, serif;
+  color: #3a2a1a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Masthead ─────────────────────────────────────────── */
+.masthead {
+  background: #e0d2b3;
+  border-bottom: 2px solid #3a2a1a;
+  padding: 18px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.masthead-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.crest-ring {
+  width: 82px;
+  height: 82px;
+  flex-shrink: 0;
+}
+
+.crest-ring img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  filter: sepia(0.5) saturate(0.8) contrast(1.1);
+  display: block;
+}
+
+.brand-label {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+  margin-bottom: 2px;
+}
+
+.brand-name {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.brand-name em {
+  color: #a8622f;
+}
+
+.masthead-meta {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+  text-align: right;
+  line-height: 1.7;
+}
+
+/* ── Main layout ──────────────────────────────────────── */
+.page-body {
+  flex: 1;
+  padding: 48px 48px 56px;
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 48px;
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  align-items: start;
+}
+
+/* ── Note card base ───────────────────────────────────── */
+.card {
+  position: relative;
+  background: #e0d2b3;
+  border: 1.5px solid rgba(58, 42, 26, 0.42);
+  padding: 24px 26px;
+  box-shadow: 3px 5px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* tape strip at top */
+.card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 72px;
+  height: 22px;
+  background: rgba(168, 98, 47, 0.28);
+  border: 1px solid rgba(168, 98, 47, 0.4);
+}
+
+/* ── Left column ──────────────────────────────────────── */
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-top: 18px;
+}
+
+.welcome-card {
+  transform: rotate(-0.8deg);
+}
+.welcome-card::before {
+  left: 30%;
+}
+
+.eyebrow {
+  font-family: "Caveat", cursive;
+  font-size: 22px;
+  color: #a8622f;
+  margin-bottom: 6px;
+}
+
+.welcome-heading {
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+
+.welcome-heading em {
+  color: #a8622f;
+}
+
+.welcome-body {
+  font-size: 15px;
+  color: #6b4a2b;
+  line-height: 1.65;
+}
+
+/* ── Info cards ───────────────────────────────────────── */
+.info-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.info-card {
+  position: relative;
+  background: #eadfc7;
+  padding: 18px 15px 15px;
+  box-shadow: 2px 3px 10px rgba(0, 0, 0, 0.09);
+}
+
+.info-card::before {
+  display: none;
+}
+
+.info-card.find {
+  border: 1.5px solid rgba(58, 42, 26, 0.45);
+  transform: rotate(0.6deg);
+}
+.info-card.lost {
+  border: 1.5px dashed rgba(58, 42, 26, 0.45);
+  transform: rotate(-0.9deg);
+}
+
+.info-badge {
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  padding: 2px 10px;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.find .info-badge {
+  background: #a8622f;
+  color: #eadfc7;
+}
+.lost .info-badge {
+  background: #3a2a1a;
+  color: #eadfc7;
+}
+
+.info-card p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #3a2a1a;
+  margin-top: 4px;
+}
+
+.info-card code {
+  font-family: "Special Elite", monospace;
+  font-size: 12px;
+}
+
+/* ── Rules card ───────────────────────────────────────── */
+.rules-card {
+  transform: rotate(0.4deg);
+}
+.rules-card::before {
+  left: 70%;
+}
+
+.section-label {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+  margin-bottom: 10px;
+}
+
+.rules-card ol {
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.78;
+}
+
+/* ── Right column wrapper ─────────────────────────────── */
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* ── Login card ───────────────────────────────────────── */
+.login-card {
+  transform: rotate(0.9deg);
+  padding: 0;
+}
+
+.login-card::before {
+  width: 90px;
+  height: 22px;
+  background: rgba(168, 98, 47, 0.32);
+  border-color: rgba(168, 98, 47, 0.48);
+}
+
+.login-inner {
+  padding: 32px 34px 30px;
+}
+
+.login-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.form-eyebrow {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+  margin-bottom: 4px;
+}
+
+.form-title {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+/* ── Ink stamp ────────────────────────────────────────── */
+.stamp {
+  width: 82px;
+  height: 82px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(168, 98, 47, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #a8622f;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  transform: rotate(-8deg);
+  position: relative;
+}
+
+.stamp::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1.2px solid rgba(168, 98, 47, 0.5);
+}
+
+.form-subtext {
+  font-family: "Caveat", cursive;
+  font-size: 17px;
+  color: #a8622f;
+  margin-bottom: 26px;
+}
+
+/* ── Fields ───────────────────────────────────────────── */
+.field {
+  margin-bottom: 22px;
+}
+
+.field-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+
+.field-top label {
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+}
+
+.field-hint {
+  font-family: "Caveat", cursive;
+  font-size: 14px;
+  color: #6b4a2b;
+}
+
+.show-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #a8622f;
+  padding: 0;
+  line-height: 1;
+}
+
+.show-toggle:hover {
+  opacity: 0.7;
+}
+
+.field input[type="text"],
+.field input[type="password"] {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid #3a2a1a;
+  outline: none;
+  font-family: "Caveat", cursive;
+  font-size: 23px;
+  color: #3a2a1a;
+  padding: 5px 0 6px;
+  letter-spacing: 0.04em;
+  transition: border-color 0.15s;
+}
+
+.field input:focus {
+  border-bottom-color: #a8622f;
+}
+.field input::placeholder {
+  color: rgba(58, 42, 26, 0.32);
+}
+
+.field-note {
+  font-size: 12px;
+  color: #6b4a2b;
+  margin-top: 5px;
+}
+
+/* ── Checkbox row ─────────────────────────────────────── */
+.check-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 26px;
+}
+
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+
+.custom-check {
+  width: 21px;
+  height: 21px;
+  border: 1.5px solid #3a2a1a;
+  background: #eadfc7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: "Caveat", cursive;
+  font-size: 21px;
+  color: #a8622f;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.forgot-link {
+  font-size: 14px;
+  color: #a8622f;
+  text-decoration: underline;
+  text-decoration-style: wavy;
+}
+
+/* ── Login tabs ──────────────────────────────────────── */
+.login-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border-bottom: 1.5px solid rgba(58, 42, 26, 0.3);
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 20px 10px;
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.tab-btn::after {
+  content: "";
+  position: absolute;
+  bottom: -1.5px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #3a2a1a;
+  scale: 0 1;
+  transition: scale 0.2s ease;
+}
+
+.tab-btn.tab-active {
+  color: #3a2a1a;
+}
+.tab-btn.tab-active::after {
+  scale: 1 1;
+}
+.tab-btn:hover:not(.tab-active) {
+  color: #a8622f;
+}
+
+/* Host stamp accent */
+.stamp-host {
+  border-color: rgba(58, 42, 26, 0.6);
+  color: #3a2a1a;
+}
+
+.stamp-host::after {
+  border-color: rgba(58, 42, 26, 0.4);
+}
+
+/* Host submit button — slightly different shade */
+.submit-btn-host {
+  background: #5a3a20;
+}
+.submit-btn-host:hover:not(:disabled) {
+  background: #a8622f;
+}
+
+/* ── Submit ───────────────────────────────────────────── */
+.submit-btn {
+  display: block;
+  width: 100%;
+  background: #3a2a1a;
+  color: #eadfc7;
+  border: none;
+  padding: 17px;
+  font-family: "IM Fell English", serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #a8622f;
+}
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.submit-btn em {
+  font-style: italic;
+}
+
+.submit-footer {
+  text-align: center;
+  margin-top: 12px;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+}
+
+/* ── Admitted view ────────────────────────────────────── */
+.admitted-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 48px;
+}
+
+.admitted-card {
+  position: relative;
+  background: #e0d2b3;
+  border: 1.5px solid rgba(58, 42, 26, 0.42);
+  padding: 52px 56px 44px;
+  box-shadow: 4px 6px 20px rgba(0, 0, 0, 0.13);
+  max-width: 560px;
+  width: 100%;
+  transform: rotate(-0.5deg);
+  text-align: center;
+}
+
+.admitted-card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 90px;
+  height: 22px;
+  background: rgba(168, 98, 47, 0.32);
+  border: 1px solid rgba(168, 98, 47, 0.48);
+}
+
+.admitted-stamp {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2.5px dashed rgba(168, 98, 47, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #a8622f;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  transform: rotate(-6deg);
+  margin: 0 auto 28px;
+  position: relative;
+}
+
+.admitted-stamp::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(168, 98, 47, 0.45);
+}
+
+.admitted-heading {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.admitted-heading em {
+  color: #a8622f;
+}
+
+.admitted-team {
+  font-family: "Special Elite", monospace;
+  font-size: 18px;
+  letter-spacing: 0.15em;
+  color: #3a2a1a;
+  margin-bottom: 18px;
+}
+
+.admitted-note {
+  font-size: 15px;
+  color: #6b4a2b;
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+
+.admitted-divider {
+  width: 60px;
+  border: none;
+  border-top: 1.5px solid rgba(58, 42, 26, 0.3);
+  margin: 0 auto 22px;
+}
+
+.help-note {
+  position: relative;
+  border: 1.5px dashed rgba(58, 42, 26, 0.45);
+  padding: 18px 18px 14px;
+  background: #eadfc7;
+  text-align: left;
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.08);
+  transform: rotate(0.4deg);
+}
+
+.help-note::before {
+  content: "Wrong device?";
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  padding: 2px 10px;
+  background: #3a2a1a;
+  color: #eadfc7;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.help-note p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #3a2a1a;
+  margin-top: 4px;
+}
+
+.help-note code {
+  font-family: "Special Elite", monospace;
+  font-size: 12px;
+}
+
+/* ── Countdown card ───────────────────────────────────── */
+.countdown-card {
+  transform: rotate(-0.6deg);
+  padding: 20px 26px 18px;
+}
+
+.countdown-card::before {
+  left: 60%;
+}
+
+.countdown-label {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+  margin-bottom: 12px;
+}
+
+.countdown-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.countdown-unit {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.countdown-num {
+  font-family: "Special Elite", monospace;
+  font-size: 44px;
+  font-weight: 400;
+  line-height: 1;
+  color: #3a2a1a;
+  min-width: 2ch;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+.countdown-unit-label {
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #a8622f;
+}
+
+.countdown-sep {
+  font-family: "IM Fell English", serif;
+  font-size: 36px;
+  color: rgba(58, 42, 26, 0.3);
+  line-height: 1;
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+.countdown-target {
+  margin-top: 8px;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #6b4a2b;
+}
+
+.countdown-done {
+  font-family: "Caveat", cursive;
+  font-size: 22px;
+  color: #a8622f;
+}
+
+/* ── Help notice ──────────────────────────────────────── */
+.notice-card {
+  border: 1.5px solid #a8622f;
+  transform: rotate(-0.5deg);
+  background: #f0e5cc;
+}
+
+.notice-card::before {
+  background: rgba(168, 98, 47, 0.45);
+  border-color: rgba(168, 98, 47, 0.6);
+  left: 42%;
+}
+
+.notice-badge {
+  display: inline-block;
+  background: #a8622f;
+  color: #eadfc7;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  margin-bottom: 10px;
+}
+
+.notice-body {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #3a2a1a;
+}
+
+.notice-body code {
+  font-family: "Special Elite", monospace;
+  font-size: 12px;
+}
+
+/* ── Ad cards ─────────────────────────────────────────── */
+.ad-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.ad-card {
+  background: #3a2a1a;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #eadfc7;
+  padding: 20px 18px 16px;
+}
+
+.ad-card::before {
+  background: rgba(168, 98, 47, 0.5);
+  border-color: rgba(168, 98, 47, 0.65);
+}
+
+.ad-card-a {
+  transform: rotate(-1.1deg);
+}
+.ad-card-b {
+  transform: rotate(0.8deg);
+}
+
+.ad-tag {
+  font-family: "Special Elite", monospace;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #a8622f;
+  margin-bottom: 6px;
+}
+
+.ad-headline {
+  font-family: "IM Fell English", serif;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1;
+  color: #eadfc7;
+  margin-bottom: 4px;
+}
+
+.ad-dot {
+  color: #a8622f;
+}
+
+.ad-sub {
+  font-size: 12px;
+  color: rgba(234, 223, 199, 0.65);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.ad-tracks {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #a8622f;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+
+.ad-stat {
+  font-family: "IM Fell English", serif;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  color: #eadfc7;
+}
+
+.ad-stat span {
+  font-size: 20px;
+  color: #a8622f;
+  font-style: italic;
+}
+
+.ad-stat-label {
+  font-size: 12px;
+  color: rgba(234, 223, 199, 0.65);
+  line-height: 1.4;
+  margin: 4px 0 10px;
+}
+
+.ad-cta {
+  font-family: "Caveat", cursive;
+  font-size: 14px;
+  color: #a8622f;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 8px;
+}
+
+/* ── Utility ──────────────────────────────────────────── */
+.hidden {
+  display: none !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   ANIMATIONS
+   ════════════════════════════════════════════════════════ */
+
+/* Card entrance — uses translate (separate property) so
+   it doesn't fight the transform:rotate() on each card   */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.card {
+  animation: card-in 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.welcome-card {
+  animation-delay: 0.05s;
+}
+.info-card.find {
+  animation-delay: 0.13s;
+}
+.info-card.lost {
+  animation-delay: 0.19s;
+}
+.rules-card {
+  animation-delay: 0.25s;
+}
+.notice-card {
+  animation-delay: 0.31s;
+}
+.ad-card-a {
+  animation-delay: 0.37s;
+}
+.ad-card-b {
+  animation-delay: 0.42s;
+}
+.login-card {
+  animation-delay: 0.1s;
+}
+.countdown-card {
+  animation-delay: 0.47s;
+}
+
+/* Tape strip drops onto card */
+@keyframes tape-in {
+  from {
+    translate: 0 -14px;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+.card::before {
+  animation: tape-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.welcome-card::before {
+  animation-delay: 0.3s;
+}
+.rules-card::before {
+  animation-delay: 0.48s;
+}
+.notice-card::before {
+  animation-delay: 0.54s;
+}
+.ad-card-a::before {
+  animation-delay: 0.58s;
+}
+.ad-card-b::before {
+  animation-delay: 0.63s;
+}
+.login-card::before {
+  animation-delay: 0.35s;
+}
+.countdown-card::before {
+  animation-delay: 0.68s;
+}
+
+/* Stamp rubber-stamps into existence */
+@keyframes stamp-in {
+  0% {
+    transform: rotate(30deg) scale(0.2);
+    opacity: 0;
+  }
+  65% {
+    transform: rotate(-11deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(-8deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.stamp {
+  animation: stamp-in 0.65s cubic-bezier(0.34, 1.4, 0.64, 1) 0.55s both;
+}
+
+/* Masthead slides down */
+@keyframes masthead-in {
+  from {
+    translate: 0 -100%;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+.masthead {
+  animation: masthead-in 0.45s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+/* Countdown digit change — subtle fade-up */
+@keyframes cd-tick {
+  0%   { opacity: 0; translate: 0 8px; }
+  100% { opacity: 1; translate: 0 0; }
+}
+
+.cd-ticking {
+  animation: cd-tick 0.2s ease-out both;
+}
+
+/* Card hover lift — smooth with transition */
+.card {
+  transition:
+    translate 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.card:hover {
+  translate: 0 -4px;
+  box-shadow: 5px 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+.info-card:hover {
+  translate: 0 -3px;
+}
+
+/* Submit button press */
+.submit-btn {
+  transition:
+    background 0.15s,
+    scale 0.1s;
+}
+.submit-btn:active:not(:disabled) {
+  scale: 0.985;
+}
+
+/* ════════════════════════════════════════════════════════
+   EASTER EGG STYLES
+   ════════════════════════════════════════════════════════ */
+
+/* Toast pop-up */
+@keyframes toast-in {
+  from {
+    translate: -50% 60px;
+    opacity: 0;
+  }
+  to {
+    translate: -50% 0;
+    opacity: 1;
+  }
+}
+@keyframes toast-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.toast {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  translate: -50% 0;
+  background: #3a2a1a;
+  color: #eadfc7;
+  padding: 12px 26px;
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  z-index: 200;
+  animation:
+    toast-in 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both,
+    toast-out 0.4s ease 2.6s forwards;
+}
+
+.toast em {
+  color: #a8622f;
+  font-style: italic;
+}
+
+/* Ink splatter on stamp */
+@keyframes splat {
+  0% {
+    scale: 0;
+    opacity: 0.8;
+  }
+  60% {
+    scale: 1.3;
+    opacity: 0.5;
+  }
+  100% {
+    scale: 1.8;
+    opacity: 0;
+  }
+}
+
+.ink-splat {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(168, 98, 47, 0.3);
+  pointer-events: none;
+  animation: splat 0.55s ease-out forwards;
+}
+
+/* Sticky idle note */
+@keyframes sticky-slide-in {
+  from {
+    translate: 140% 0;
+    rotate: -3deg;
+  }
+  to {
+    translate: 0 0;
+    rotate: -3deg;
+  }
+}
+@keyframes sticky-slide-out {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 140% 0;
+  }
+}
+
+.sticky-note {
+  position: fixed;
+  bottom: 90px;
+  right: 32px;
+  background: #f8edcc;
+  border: 1px solid rgba(58, 42, 26, 0.25);
+  padding: 16px 18px 14px;
+  width: 190px;
+  font-family: "Caveat", cursive;
+  font-size: 19px;
+  line-height: 1.4;
+  color: #3a2a1a;
+  box-shadow: 3px 5px 16px rgba(0, 0, 0, 0.14);
+  z-index: 100;
+  cursor: pointer;
+  animation: sticky-slide-in 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.sticky-note::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  translate: -50% 0;
+  width: 54px;
+  height: 18px;
+  background: rgba(168, 98, 47, 0.3);
+  border: 1px solid rgba(168, 98, 47, 0.42);
+}
+
+.sticky-note.leaving {
+  animation: sticky-slide-out 0.4s ease forwards;
+}
+
+/* Confetti pieces */
+@keyframes confetti-fall {
+  0% {
+    translate: 0 -10px;
+    rotate: 0deg;
+    opacity: 1;
+  }
+  100% {
+    translate: var(--cx) 100vh;
+    rotate: var(--cr);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  position: fixed;
+  top: 60px;
+  width: 9px;
+  height: 13px;
+  pointer-events: none;
+  z-index: 300;
+  animation: confetti-fall var(--cd) ease-in var(--cdelay) forwards;
+}
+
+/* Card wobble */
+@keyframes card-wobble {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  20% {
+    rotate: -4deg;
+  }
+  45% {
+    rotate: 4deg;
+  }
+  65% {
+    rotate: -2deg;
+  }
+  82% {
+    rotate: 2deg;
+  }
+}
+
+.wobbling {
+  animation: card-wobble 0.55s ease both !important;
+}
+
+/* Crest wild spin */
+@keyframes crest-spin {
+  from {
+    rotate: 0deg;
+  }
+  to {
+    rotate: 360deg;
+  }
+}
+
+.crest-spinning {
+  animation: crest-spin 0.75s cubic-bezier(0.34, 1.2, 0.64, 1) both;
+}
+
+/* Field WELHAM glow */
+@keyframes welham-glow {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(168, 98, 47, 0.35),
+      0 0 18px rgba(168, 98, 47, 0.2);
+  }
+}
+
+.welham-glow {
+  animation: welham-glow 0.7s ease 3;
+}
+
+/* "literally." append wobble */
+@keyframes literally-in {
+  from {
+    opacity: 0;
+    translate: 6px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+.literally {
+  font-family: "Caveat", cursive;
+  color: #a8622f;
+  font-size: 1.1em;
+  display: inline-block;
+  animation: literally-in 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+/* Countdown scramble */
+@keyframes scramble-in {
+  from {
+    opacity: 0;
+    scale: 1.3;
+    color: #a8622f;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    color: #3a2a1a;
+  }
+}
+
+.cd-scrambling {
+  animation: scramble-in 0.35s ease both;
+}
+
+/* Auctioneer Mode — full dark theme */
+@keyframes mode-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Smooth theme transition on everything */
+body {
+  transition: background-color 0.7s ease, color 0.7s ease;
+}
+
+.masthead,
+.card,
+.admitted-card,
+.admitted-stamp,
+.help-note,
+.info-badge,
+.ad-card {
+  transition:
+    background-color 0.7s ease,
+    border-color 0.7s ease,
+    color 0.7s ease,
+    box-shadow 0.7s ease,
+    translate 0.18s ease;
+}
+
+body.auctioneer-mode {
+  background-color: #120d06;
+  background-image: repeating-linear-gradient(
+    transparent 0px,
+    transparent 27px,
+    rgba(168, 98, 47, 0.12) 27px,
+    rgba(168, 98, 47, 0.12) 28px
+  );
+  animation: mode-flash 0.15s steps(1) 3;
+}
+
+body.auctioneer-mode .masthead {
+  background: #1e1208;
+  border-bottom-color: #a8622f;
+}
+
+body.auctioneer-mode .brand-label,
+body.auctioneer-mode .masthead-meta {
+  color: #a8622f;
+}
+
+body.auctioneer-mode .card {
+  background: #1e1208;
+  border-color: rgba(168, 98, 47, 0.35);
+  color: #eadfc7;
+}
+
+body.auctioneer-mode .welcome-body,
+body.auctioneer-mode .rules-card ol,
+body.auctioneer-mode .info-card p,
+body.auctioneer-mode .notice-body,
+body.auctioneer-mode .field-note,
+body.auctioneer-mode .submit-footer {
+  color: rgba(234, 223, 199, 0.65);
+}
+
+body.auctioneer-mode .section-label,
+body.auctioneer-mode .form-eyebrow,
+body.auctioneer-mode .field-top label,
+body.auctioneer-mode .countdown-label,
+body.auctioneer-mode .countdown-target,
+body.auctioneer-mode .brand-name {
+  color: rgba(234, 223, 199, 0.55);
+}
+
+body.auctioneer-mode .field input[type="text"],
+body.auctioneer-mode .field input[type="password"] {
+  color: #eadfc7;
+  border-bottom-color: rgba(234, 223, 199, 0.4);
+}
+
+body.auctioneer-mode .field input:focus {
+  border-bottom-color: #a8622f;
+}
+body.auctioneer-mode .field input::placeholder {
+  color: rgba(234, 223, 199, 0.2);
+}
+
+body.auctioneer-mode .countdown-num {
+  color: #eadfc7;
+}
+body.auctioneer-mode .ad-card {
+  background: #0d0803;
+}
+
+body.auctioneer-mode .submit-btn {
+  background: #a8622f;
+  color: #1e1208;
+}
+
+body.auctioneer-mode .submit-btn:hover:not(:disabled) {
+  background: #c87840;
+}
+
+body.auctioneer-mode .custom-check {
+  background: #1e1208;
+  color: #a8622f;
+  border-color: rgba(234, 223, 199, 0.4);
+}
+
+body.auctioneer-mode .check-label {
+  color: #eadfc7;
+}
+
+/* Auctioneer mode banner */
+.auctioneer-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #a8622f;
+  color: #1e1208;
+  text-align: center;
+  padding: 8px;
+  font-family: "Special Elite", monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  z-index: 500;
+  cursor: pointer;
+}
+
+body.auctioneer-mode .masthead {
+  margin-top: 36px;
+}
+
+/* ── Auctioneer mode: admitted view ──────────────────── */
+body.auctioneer-mode .admitted-card {
+  background: #1a1008;
+  border-color: rgba(168, 98, 47, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(168, 98, 47, 0.1),
+    4px 6px 28px rgba(0, 0, 0, 0.6);
+}
+
+body.auctioneer-mode .admitted-card::before {
+  background: rgba(168, 98, 47, 0.35);
+  border-color: rgba(168, 98, 47, 0.55);
+}
+
+body.auctioneer-mode .admitted-stamp {
+  border-color: rgba(168, 98, 47, 0.7);
+  color: #a8622f;
+}
+
+body.auctioneer-mode .admitted-stamp::after {
+  border-color: rgba(168, 98, 47, 0.4);
+}
+
+body.auctioneer-mode .admitted-heading {
+  color: #eadfc7;
+}
+
+body.auctioneer-mode .admitted-heading em {
+  color: #a8622f;
+}
+
+body.auctioneer-mode .admitted-team {
+  color: #a8622f;
+  letter-spacing: 0.18em;
+}
+
+body.auctioneer-mode .admitted-note {
+  color: rgba(234, 223, 199, 0.6);
+}
+
+body.auctioneer-mode .admitted-divider {
+  border-top-color: rgba(168, 98, 47, 0.3);
+}
+
+body.auctioneer-mode .help-note {
+  background: #0d0803;
+  border-color: rgba(168, 98, 47, 0.35);
+}
+
+body.auctioneer-mode .help-note::before {
+  background: #a8622f;
+  color: #1a1008;
+}
+
+body.auctioneer-mode .help-note p {
+  color: rgba(234, 223, 199, 0.55);
+}
+
+body.auctioneer-mode .help-note code {
+  color: #a8622f;
+}
+
+/* ── Slip-of-paper note (EE #10) ──────────────────────── */
+@keyframes slip-in {
+  from { translate: 0 40px; opacity: 0; rotate: -4deg; }
+  to   { translate: 0 0;    opacity: 1; rotate: -2deg; }
+}
+@keyframes slip-out {
+  from { opacity: 1; }
+  to   { opacity: 0; translate: 0 30px; }
+}
+
+.slip-note {
+  position: fixed;
+  bottom: 90px;
+  left: 32px;
+  background: #f8edcc;
+  border: 1px solid rgba(58, 42, 26, 0.25);
+  padding: 16px 18px 14px;
+  width: 220px;
+  font-family: "Caveat", cursive;
+  font-size: 18px;
+  line-height: 1.45;
+  color: #3a2a1a;
+  box-shadow: 3px 5px 16px rgba(0, 0, 0, 0.14);
+  z-index: 100;
+  cursor: pointer;
+  animation: slip-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+
+.slip-note::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  translate: -50% 0;
+  width: 54px;
+  height: 18px;
+  background: rgba(168, 98, 47, 0.3);
+  border: 1px solid rgba(168, 98, 47, 0.42);
+}
+
+.slip-note small {
+  display: block;
+  font-size: 13px;
+  opacity: 0.55;
+  margin-top: 6px;
+}
+
+.slip-note.leaving {
+  animation: slip-out 0.35s ease forwards;
+}
+
+/* ── Mobile / tablet block ────────────────────────────── */
+#mobile-block {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #eadfc7;
+  background-image: repeating-linear-gradient(
+    transparent 0px,
+    transparent 27px,
+    rgba(58, 42, 26, 0.1) 27px,
+    rgba(58, 42, 26, 0.1) 28px
+  );
+  z-index: 9999;
+  /* layout set per breakpoint in responsive.css */
+}
+
+
+/* ── Mobile block animations ──────────────────────────── */
+@keyframes mb-card-in {
+  from {
+    opacity: 0;
+    translate: 0 36px;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes mb-tape-in {
+  from {
+    translate: 0 -16px;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes mb-icon-in {
+  0%   { opacity: 0; scale: 0.5; rotate: -20deg; }
+  70%  { scale: 1.15; rotate: 6deg; }
+  100% { opacity: 1; scale: 1; rotate: 0deg; }
+}
+
+@keyframes mb-text-in {
+  from { opacity: 0; translate: 0 12px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+
+@keyframes mb-note-in {
+  from { opacity: 0; translate: 0 10px; rotate: -1deg; }
+  to   { opacity: 1; translate: 0 0;   rotate: 0.5deg; }
+}
+
+@keyframes mb-rule-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.7; }
+}
+
+.mobile-block-card {
+  position: relative;
+  background: #e0d2b3;
+  border: 1.5px solid rgba(58, 42, 26, 0.42);
+  padding: 56px 48px 48px;
+  box-shadow: 4px 6px 20px rgba(0, 0, 0, 0.14);
+  max-width: 560px;
+  width: 100%;
+  transform: rotate(-0.8deg);
+  text-align: center;
+  margin-top: 20px;
+  animation: mb-card-in 0.55s cubic-bezier(0.34, 1.3, 0.64, 1) 0.1s both;
+}
+
+.mobile-block-card::before {
+  content: "";
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 96px;
+  height: 26px;
+  background: rgba(168, 98, 47, 0.28);
+  border: 1px solid rgba(168, 98, 47, 0.4);
+  animation: mb-tape-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+}
+
+.mobile-block-icon {
+  font-size: 64px;
+  margin-bottom: 22px;
+  line-height: 1;
+  display: block;
+  animation: mb-icon-in 0.6s cubic-bezier(0.34, 1.4, 0.64, 1) 0.3s both;
+}
+
+.mobile-block-eyebrow {
+  font-family: "Special Elite", monospace;
+  font-size: 14px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #3a2a1a;
+  margin-bottom: 14px;
+  animation: mb-text-in 0.45s ease 0.55s both;
+}
+
+.mobile-block-heading {
+  font-size: 62px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 22px;
+  color: #3a2a1a;
+  animation: mb-text-in 0.45s ease 0.62s both;
+}
+
+.mobile-block-heading em {
+  color: #a8622f;
+}
+
+.mobile-block-body {
+  font-size: 22px;
+  color: #3a2a1a;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  animation: mb-text-in 0.45s ease 0.7s both;
+}
+
+.mobile-block-note {
+  border: 1.5px dashed rgba(58, 42, 26, 0.45);
+  padding: 18px 20px;
+  background: #eadfc7;
+  font-family: "Special Elite", monospace;
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #3a2a1a;
+  transform: rotate(0.5deg);
+  animation:
+    mb-note-in 0.45s ease 0.8s both,
+    mb-rule-pulse 3s ease-in-out 1.4s infinite;
+}
+
+/* ════════════════════════════════════════════════════════
+   AUCTIONEER OVERLAY  (Konami-activated full-screen)
+   ════════════════════════════════════════════════════════ */
+@keyframes ac-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes ac-card-in {
+  from { opacity: 0; translate: 0 32px; scale: 0.97; }
+  to   { opacity: 1; translate: 0 0;    scale: 1; }
+}
+
+#auctioneer-view {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 7, 3, 0.94);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+  padding: 40px 24px;
+  animation: ac-overlay-in 0.25s ease both;
+}
+
+#auctioneer-view.hidden {
+  display: none !important;
+}
+
+.ac-card {
+  position: relative;
+  background: #1a1008;
+  border: 1.5px solid rgba(168, 98, 47, 0.45);
+  padding: 48px 44px 38px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow:
+    0 0 0 1px rgba(168, 98, 47, 0.12),
+    0 20px 60px rgba(0, 0, 0, 0.7);
+  transform: rotate(-0.5deg);
+  animation: ac-card-in 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) 0.1s both;
+}
+
+/* tape strip */
+.ac-card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 80px;
+  height: 22px;
+  background: rgba(168, 98, 47, 0.35);
+  border: 1px solid rgba(168, 98, 47, 0.55);
+}
+
+.ac-eyebrow {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #a8622f;
+  margin-bottom: 10px;
+}
+
+.ac-title {
+  font-family: "IM Fell English", serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  color: #eadfc7;
+  margin-bottom: 4px;
+}
+
+.ac-title em {
+  color: #a8622f;
+}
+
+.ac-sub {
+  font-family: "Caveat", cursive;
+  font-size: 17px;
+  color: rgba(234, 223, 199, 0.45);
+  margin-bottom: 30px;
+}
+
+.ac-field {
+  margin-bottom: 22px;
+}
+
+.ac-field-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+}
+
+.ac-label {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(234, 223, 199, 0.5);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.ac-input {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid rgba(168, 98, 47, 0.5);
+  outline: none;
+  font-family: "Caveat", cursive;
+  font-size: 23px;
+  color: #eadfc7;
+  padding: 5px 0 6px;
+  letter-spacing: 0.04em;
+  transition: border-color 0.15s;
+}
+
+.ac-input:focus {
+  border-bottom-color: #a8622f;
+}
+
+.ac-input::placeholder {
+  color: rgba(234, 223, 199, 0.2);
+}
+
+.ac-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #a8622f;
+  padding: 0;
+  line-height: 1;
+}
+
+.ac-toggle:hover {
+  opacity: 0.7;
+}
+
+.ac-submit {
+  display: block;
+  width: 100%;
+  background: #a8622f;
+  color: #1a1008;
+  border: none;
+  padding: 16px;
+  font-family: "IM Fell English", serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 28px;
+  transition: background 0.15s, scale 0.1s;
+}
+
+.ac-submit:hover:not(:disabled) {
+  background: #c87840;
+}
+
+.ac-submit:active:not(:disabled) {
+  scale: 0.985;
+}
+
+.ac-submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ac-submit em {
+  font-style: italic;
+}
+
+.ac-back {
+  margin-top: 18px;
+  text-align: center;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(234, 223, 199, 0.3);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.ac-back:hover {
+  color: rgba(234, 223, 199, 0.65);
+}

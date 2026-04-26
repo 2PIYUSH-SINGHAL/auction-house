@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>The Auction Hall — Team Sign-in · hack.welham</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Special+Elite&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- ══ MOBILE BLOCK ══════════════════════════════════════════ -->
+  <div id="mobile-block">
+    <div class="mobile-block-card">
+      <div class="mobile-block-icon">⌨</div>
+      <div class="mobile-block-eyebrow">Device check · Form № 00</div>
+      <h2 class="mobile-block-heading">Use a <em>desktop</em></h2>
+      <p class="mobile-block-body">
+        The Auction Hall is a desktop-only experience.<br>
+        Phones and tablets are not permitted for this session.
+      </p>
+      <div class="mobile-block-note">§ &nbsp;Please return on a laptop or desktop computer &nbsp;§</div>
+    </div>
+  </div>
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-brand">
+      <div class="crest-ring">
+        <img src="assets/welham-crest.png" alt="Welham Boys School crest">
+      </div>
+      <div>
+        <div class="brand-label">hack.welham · Mini Event</div>
+        <div class="brand-name">The Auction <em>Hall</em></div>
+      </div>
+    </div>
+    <div class="masthead-meta">
+      <div>Session № 01</div>
+      <div>31 Jul 2026 · 21:00 IST</div>
+    </div>
+  </header>
+
+
+  <!-- ══ LOGIN VIEW ══════════════════════════════════════════ -->
+  <div id="login-view" class="page-body">
+
+    <!-- LEFT: context -->
+    <div class="left-col">
+
+      <div class="card welcome-card">
+        <div class="eyebrow">welcome, hackers →</div>
+        <h1 class="welcome-heading">Auction <em>sign-in</em></h1>
+        <p class="welcome-body">
+          The auction mini-event is a closed-room bidding game.
+          Each registered team is issued a private <em>Auction ID</em>
+          and a <em>Passcode</em> — use them to enter the hall.
+        </p>
+      </div>
+
+      <div class="info-row">
+        <div class="card info-card find">
+          <span class="info-badge">Find it</span>
+          <p>Your Auction ID and Passcode were emailed to the team's teacher-in-charge after registration.</p>
+        </div>
+        <div class="card info-card lost">
+          <span class="info-badge">Lost it?</span>
+          <p>Email <code>auction@welham.edu.in</code> from your school address.</p>
+        </div>
+      </div>
+
+      <div class="card rules-card">
+        <div class="section-label">§ House Rules</div>
+        <ol>
+          <li>One sign-in per team. The session locks this device once entered.</li>
+          <li>Bids are final. No retractions, no re-rolls.</li>
+          <li>Doors close at 20:55 IST sharp. Late entries forfeit their float.</li>
+          <li>Disputes go to the auctioneer. Their word is law.</li>
+        </ol>
+      </div>
+
+      <!-- HELP NOTICE -->
+      <div class="card notice-card">
+        <div class="notice-badge">Need help?</div>
+        <p class="notice-body">
+          Ping a volunteer in the <strong>hack.welham help desk</strong> channel on Zoom,
+          or email <code>auction@welham.edu.in</code> before doors open at 20:55 IST.
+          After that, flag the auctioneer directly in the session.
+        </p>
+      </div>
+
+      <!-- ADS -->
+      <div class="ad-row">
+        <div class="card ad-card ad-card-a">
+          <div class="ad-tag">31 Jul 2026 · Online</div>
+          <div class="ad-headline">hack<span class="ad-dot">.</span>welham</div>
+          <div class="ad-sub">The flagship inter-school hackathon</div>
+          <div class="ad-tracks">AI &nbsp;·&nbsp; Web &nbsp;·&nbsp; Cloud</div>
+        </div>
+        <div class="card ad-card ad-card-b">
+          <div class="ad-tag">Classes 9 – 12</div>
+          <div class="ad-stat">24 <span>hrs</span></div>
+          <div class="ad-stat-label">of building, breaking &amp; bidding</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: login form + countdown -->
+    <div class="right-col">
+    <div class="card login-card">
+      <div class="login-inner">
+        <div class="login-header">
+          <div>
+            <div class="form-eyebrow">Form № 02 · Entry</div>
+            <div class="form-title">Auction <em>credentials</em></div>
+          </div>
+          <div class="stamp">BY<br>TEAM<br>ONLY</div>
+        </div>
+
+        <div class="form-subtext">— issued one per team, do not share —</div>
+
+        <form id="login-form" novalidate>
+          <div class="field">
+            <div class="field-top">
+              <label for="auction-id">Auction ID</label>
+              <span class="field-hint">e.g. WBS-A-0427</span>
+            </div>
+            <input type="text" id="auction-id" placeholder="WBS-A-____" autocomplete="off" spellcheck="false">
+          </div>
+
+          <div class="field">
+            <div class="field-top">
+              <label for="passcode">Passcode</label>
+              <button type="button" class="show-toggle" id="show-toggle">show ◉</button>
+            </div>
+            <input type="password" id="passcode" placeholder="••••••••" autocomplete="off">
+            <div class="field-note">Eight characters. Case sensitive.</div>
+          </div>
+
+          <div class="check-row">
+            <label class="check-label">
+              <span class="custom-check" id="remember-box" role="checkbox" aria-checked="true" tabindex="0">✓</span>
+              <span>Remember this device</span>
+            </label>
+            <a href="#" class="forgot-link">forgot passcode?</a>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submit-btn">
+            Enter the hall <em>↗</em>
+          </button>
+          <div class="submit-footer">⌁ secured by the auctioneer ⌁</div>
+        </form>
+      </div>
+    </div>
+
+    <!-- COUNTDOWN -->
+    <div class="card countdown-card">
+      <div class="countdown-label">§ Auction opens in</div>
+      <div class="countdown-display">
+        <div class="countdown-unit">
+          <span class="countdown-num" id="cd-hours">--</span>
+          <span class="countdown-unit-label">hrs</span>
+        </div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-unit">
+          <span class="countdown-num" id="cd-mins">--</span>
+          <span class="countdown-unit-label">min</span>
+        </div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-unit">
+          <span class="countdown-num" id="cd-secs">--</span>
+          <span class="countdown-unit-label">sec</span>
+        </div>
+      </div>
+      <div class="countdown-target">31 Jul 2026 · 21:00 IST</div>
+    </div>
+
+    </div><!-- end .right-col -->
+
+  </div>
+
+
+  <!-- ══ ADMITTED VIEW (post-login / return visit) ══════════ -->
+  <div id="admitted-view" class="hidden admitted-body">
+    <div class="admitted-card">
+
+      <div class="admitted-stamp">SEAT<br>RESERVED</div>
+
+      <h1 class="admitted-heading">You're <em>inside</em></h1>
+      <div class="admitted-team" id="admitted-team-id">WBS-A-0000</div>
+      <p class="admitted-note">
+        Your seat in the Auction Hall is reserved.<br>
+        The auctioneer will open the floor at <strong>21:00 IST</strong>.
+        This device is now locked to your team for the duration of the session.
+      </p>
+
+      <hr class="admitted-divider">
+
+      <div class="help-note">
+        <p>
+          If this device belongs to a different team, email
+          <code>auction@welham.edu.in</code> from your school address
+          and the auctioneer will reassign your slot.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ══ AUCTIONEER OVERLAY (Konami activated) ══════════════ -->
+  <div id="auctioneer-view" class="hidden">
+    <div class="ac-card">
+      <div class="ac-eyebrow">⌁ restricted access ⌁</div>
+      <div class="ac-title">Auctioneer <em>Entry</em></div>
+      <div class="ac-sub">— authorised personnel only —</div>
+
+      <form id="auctioneer-form" novalidate>
+        <div class="ac-field">
+          <label class="ac-label" for="auctioneer-name">Your Name</label>
+          <input type="text" id="auctioneer-name" class="ac-input" placeholder="Mr. / Ms. ____" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="ac-field">
+          <div class="ac-field-top">
+            <label class="ac-label" for="auctioneer-pass">Auctioneer Password</label>
+            <button type="button" class="ac-toggle" id="show-toggle-a">show ◉</button>
+          </div>
+          <input type="password" id="auctioneer-pass" class="ac-input" placeholder="••••••••" autocomplete="off">
+        </div>
+
+        <button type="submit" class="ac-submit" id="auctioneer-submit-btn">
+          Open the Hall <em>↗</em>
+        </button>
+      </form>
+
+      <div class="ac-back" id="ac-back">esc · exit auctioneer mode</div>
+    </div>
+  </div>
+
+  <script src="js/main.js"></script>
+  <script src="js/easter-eggs.js"></script>
+</body>
+</html>

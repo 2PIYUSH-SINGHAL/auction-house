@@ -1,0 +1,110 @@
+/* ════════════════════════════════════════════════════════════════
+   RESPONSIVE — The Auction Hall
+   < 1280px → mobile block (all non-desktop sizes)
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Show block for everything under desktop width ── */
+@media (max-width: 1279px) {
+  #mobile-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 48px 32px;
+  }
+}
+
+/* ── iPad Pro / large tablet (1024 – 1279px) ── */
+@media (max-width: 1279px) and (min-width: 1024px) {
+  #mobile-block {
+    padding: 60px 48px;
+  }
+
+  .mobile-block-card {
+    max-width: 620px;
+    padding: 64px 60px 54px;
+    transform: rotate(-0.6deg);
+  }
+
+  .mobile-block-icon    { font-size: 72px; }
+  .mobile-block-eyebrow { font-size: 15px; }
+  .mobile-block-heading { font-size: 72px; }
+  .mobile-block-body    { font-size: 24px; }
+  .mobile-block-note    { font-size: 14px; }
+}
+
+/* ── Regular tablet (768 – 1023px) ── */
+@media (max-width: 1023px) and (min-width: 768px) {
+  #mobile-block {
+    padding: 48px 36px;
+  }
+
+  .mobile-block-card {
+    max-width: 560px;
+    padding: 60px 52px 48px;
+    transform: rotate(-0.7deg);
+  }
+
+  .mobile-block-icon    { font-size: 68px; }
+  .mobile-block-eyebrow { font-size: 14px; }
+  .mobile-block-heading { font-size: 66px; }
+  .mobile-block-body    { font-size: 22px; }
+  .mobile-block-note    { font-size: 13px; }
+}
+
+/* ── Large phone / small tablet (480 – 767px) ── */
+@media (max-width: 767px) and (min-width: 480px) {
+  #mobile-block {
+    padding: 40px 24px;
+  }
+
+  .mobile-block-card {
+    max-width: 100%;
+    padding: 52px 36px 44px;
+    transform: rotate(-0.5deg);
+  }
+
+  .mobile-block-icon    { font-size: 60px; }
+  .mobile-block-eyebrow { font-size: 13px; letter-spacing: 0.22em; }
+  .mobile-block-heading { font-size: 56px; }
+  .mobile-block-body    { font-size: 20px; }
+  .mobile-block-note    { font-size: 12px; padding: 16px 18px; }
+}
+
+/* ── Phone (< 480px) ── */
+@media (max-width: 479px) {
+  #mobile-block {
+    padding: 32px 16px;
+    align-items: center;
+  }
+
+  .mobile-block-card {
+    max-width: 100%;
+    padding: 48px 28px 38px;
+    transform: none;
+    margin-top: 14px;
+  }
+
+  .mobile-block-card::before {
+    width: 80px;
+    height: 22px;
+  }
+
+  .mobile-block-icon    { font-size: 52px; margin-bottom: 18px; }
+  .mobile-block-eyebrow { font-size: 11px; letter-spacing: 0.18em; }
+  .mobile-block-heading { font-size: 48px; margin-bottom: 18px; }
+  .mobile-block-body    { font-size: 18px; margin-bottom: 26px; }
+  .mobile-block-note    { font-size: 11px; padding: 14px 14px; letter-spacing: 0.15em; transform: none; }
+}
+
+/* ── Very small phone (< 360px) ── */
+@media (max-width: 359px) {
+  .mobile-block-card {
+    padding: 40px 22px 32px;
+  }
+
+  .mobile-block-heading { font-size: 40px; }
+  .mobile-block-body    { font-size: 16px; }
+  .mobile-block-note    { font-size: 10px; }
+}

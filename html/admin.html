@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Auctioneer Dashboard · hack.welham</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body>
+
+  <!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <img src="../assets/welham-crest.png" alt="crest">
+      <div>
+        <div class="sidebar-label">hack.welham</div>
+        <div class="sidebar-title">Auction <em>Hall</em></div>
+      </div>
+    </div>
+
+    <div class="sidebar-auctioneer">
+      <div class="sidebar-meta">Signed in as</div>
+      <div class="sidebar-name" id="auctioneer-display">—</div>
+    </div>
+
+    <ul class="nav-list">
+      <li class="nav-item active" data-section="session">
+        <span class="nav-icon">⬤</span> Start Auction
+        <span class="status-pill" id="nav-session-pill"></span>
+      </li>
+      <li class="nav-item" data-section="lots">
+        <span class="nav-icon">§</span> Add Items
+      </li>
+      <li class="nav-item" data-section="bids">
+        <span class="nav-icon">↗</span> View Bids
+      </li>
+      <li class="nav-item" data-section="login-logs">
+        <span class="nav-icon">⌁</span> Login Logs
+      </li>
+      <li class="nav-item" data-section="teams">
+        <span class="nav-icon">◉</span> Teams &amp; Passwords
+      </li>
+      <li class="nav-item" data-section="forgot">
+        <span class="nav-icon">?</span> Passcode Requests
+        <span class="count-pill" id="nav-forgot-count"></span>
+      </li>
+
+      <li class="nav-divider">After auction</li>
+
+      <li class="nav-item post-auction locked" data-section="unsold">
+        <span class="nav-icon">⊘</span> Unsold Lots
+      </li>
+      <li class="nav-item post-auction locked" data-section="restart">
+        <span class="nav-icon">↺</span> Restart Auction
+      </li>
+      <li class="nav-item post-auction locked" data-section="overspent">
+        <span class="nav-icon">!</span> Overspent Teams
+        <span class="count-pill warn" id="nav-overspent-count"></span>
+      </li>
+      <li class="nav-item post-auction locked" data-section="remove-lots">
+        <span class="nav-icon">✕</span> Remove Lots
+      </li>
+    </ul>
+
+    <div class="sidebar-clock" id="live-clock">--:--:--</div>
+  </nav>
+
+
+  <!-- ══ MAIN CONTENT ════════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ── 1. Session ───────────────────────────────────────── -->
+    <section id="section-session" class="section active">
+      <div class="section-header">
+        <h1 class="section-title">Start <em>Auction</em></h1>
+        <div class="section-sub">Session № 01 · 31 Jul 2026 · 21:00 IST</div>
+      </div>
+
+      <div class="cards-row">
+        <div class="card">
+          <div class="card-eyebrow">§ Session status</div>
+          <div class="session-status-row">
+            <span class="status-dot" id="status-dot"></span>
+            <span class="status-text" id="status-text">Waiting to open</span>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" id="btn-start">Open session</button>
+            <button class="btn btn-ghost"   id="btn-pause" disabled>Pause</button>
+            <button class="btn btn-danger"  id="btn-end"   disabled>Close session</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-eyebrow">§ Session info</div>
+          <div class="info-grid">
+            <div class="info-item"><span class="info-label">Date</span><span class="info-val">31 Jul 2026</span></div>
+            <div class="info-item"><span class="info-label">Opens</span><span class="info-val">21:00 IST</span></div>
+            <div class="info-item"><span class="info-label">Teams</span><span class="info-val" id="stat-teams">0</span></div>
+            <div class="info-item"><span class="info-label">Lots</span><span class="info-val" id="stat-lots">0</span></div>
+            <div class="info-item"><span class="info-label">Bids placed</span><span class="info-val" id="stat-bids">0</span></div>
+            <div class="info-item"><span class="info-label">Total raised</span><span class="info-val" id="stat-raised">₹ 0</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 2. Lots ───────────────────────────────────────────── -->
+    <section id="section-lots" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Add <em>Items</em></h1>
+        <button class="btn btn-primary" id="btn-add-lot">+ Add lot</button>
+      </div>
+
+      <div class="card">
+        <table class="data-table" id="lots-table">
+          <thead><tr>
+            <th>Lot №</th><th>Title</th><th>Description</th><th>Floor</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="lots-tbody"><tr><td colspan="6" class="empty-row">No lots added yet.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 3. Bids ───────────────────────────────────────────── -->
+    <section id="section-bids" class="section">
+      <div class="section-header">
+        <h1 class="section-title">View <em>Bids</em></h1>
+        <button class="btn btn-ghost" id="btn-add-bid">+ Record bid</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Team</th><th>Lot</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody id="bids-tbody"><tr><td colspan="5" class="empty-row">No bids recorded yet.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 4. Login logs ─────────────────────────────────────── -->
+    <section id="section-login-logs" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Login <em>Logs</em></h1>
+        <button class="btn btn-ghost" id="btn-clear-logs">Clear logs</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Team ID</th><th>Status</th><th>Device</th></tr></thead>
+          <tbody id="logs-tbody"><tr><td colspan="4" class="empty-row">No login attempts recorded.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 5. Teams & Passwords ──────────────────────────────── -->
+    <section id="section-teams" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Teams &amp; <em>Passwords</em></h1>
+        <button class="btn btn-primary" id="btn-add-team">+ Add team</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Auction ID</th><th>School</th><th>Float</th><th>Spent</th><th>Login</th><th>Actions</th></tr></thead>
+          <tbody id="teams-tbody"><tr><td colspan="6" class="empty-row">No teams registered.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 6. Forgot passcode ────────────────────────────────── -->
+    <section id="section-forgot" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Passcode <em>Requests</em></h1>
+        <button class="btn btn-ghost" id="btn-clear-forgot">Clear all</button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Team ID</th><th>School</th><th>Action</th></tr></thead>
+          <tbody id="forgot-tbody"><tr><td colspan="4" class="empty-row">No passcode requests.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 7. Unsold lots ────────────────────────────────────── -->
+    <section id="section-unsold" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Unsold <em>Lots</em></h1>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Lot №</th><th>Title</th><th>Floor</th><th>Bids received</th></tr></thead>
+          <tbody id="unsold-tbody"><tr><td colspan="4" class="empty-row">No unsold lots.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 8. Restart ────────────────────────────────────────── -->
+    <section id="section-restart" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Restart <em>Auction</em></h1>
+      </div>
+      <div class="cards-row">
+        <div class="card">
+          <div class="card-eyebrow">§ Carry over unsold lots</div>
+          <p class="card-body-text">The following unsold lots will be included in the new round. You may also add new lots before restarting.</p>
+          <div id="restart-unsold-list" class="check-list"></div>
+          <div class="btn-group" style="margin-top:20px">
+            <button class="btn btn-primary" id="btn-restart-auction">Restart with selected lots</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">§ Add extra lots to new round</div>
+          <div class="field-group">
+            <label class="field-label">Title</label>
+            <input type="text" class="field-input" id="restart-lot-title" placeholder="Lot title">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Description</label>
+            <input type="text" class="field-input" id="restart-lot-desc" placeholder="Brief description">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Floor price (₹)</label>
+            <input type="number" class="field-input" id="restart-lot-floor" placeholder="0">
+          </div>
+          <button class="btn btn-ghost" id="btn-restart-add-lot" style="margin-top:14px">Add to new round</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 9. Overspent teams ────────────────────────────────── -->
+    <section id="section-overspent" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Overspent <em>Teams</em></h1>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Team ID</th><th>School</th><th>Float</th><th>Spent</th><th>Over by</th><th>Lots won</th></tr></thead>
+          <tbody id="overspent-tbody"><tr><td colspan="6" class="empty-row">No overspent teams.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── 10. Remove lots ───────────────────────────────────── -->
+    <section id="section-remove-lots" class="section">
+      <div class="section-header">
+        <h1 class="section-title">Remove <em>Lots</em></h1>
+        <div class="section-sub">Select a team and remove lots they can no longer afford.</div>
+      </div>
+      <div class="cards-row">
+        <div class="card" style="min-width:220px;flex:0 0 auto">
+          <div class="card-eyebrow">§ Overspent teams</div>
+          <ul class="team-pick-list" id="remove-team-list"></ul>
+        </div>
+        <div class="card" style="flex:1">
+          <div class="card-eyebrow">§ Lots assigned to <span id="remove-target-name">—</span></div>
+          <table class="data-table" id="remove-lots-table">
+            <thead><tr><th>Lot №</th><th>Title</th><th>Bid amount</th><th></th></tr></thead>
+            <tbody id="remove-lots-tbody"><tr><td colspan="4" class="empty-row">Select a team first.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- end .main -->
+
+
+  <!-- ══ MODALS ══════════════════════════════════════════════════ -->
+
+  <!-- Add / edit lot -->
+  <div id="modal-lot" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-lot-title">Add <em>lot</em></div>
+      <form id="form-lot" novalidate>
+        <input type="hidden" id="lot-edit-id">
+        <div class="field-group">
+          <label class="field-label">Lot number</label>
+          <input type="text" class="field-input" id="lot-num" placeholder="01">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Title</label>
+          <input type="text" class="field-input" id="lot-title" placeholder="Item name">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Description</label>
+          <input type="text" class="field-input" id="lot-desc" placeholder="Brief description">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Floor price (₹)</label>
+          <input type="number" class="field-input" id="lot-floor" placeholder="0" min="0">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Save lot</button>
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add team -->
+  <div id="modal-team" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Add <em>team</em></div>
+      <form id="form-team" novalidate>
+        <div class="field-group">
+          <label class="field-label">Auction ID</label>
+          <input type="text" class="field-input" id="team-id" placeholder="WBS-A-0001" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">School</label>
+          <input type="text" class="field-input" id="team-school" placeholder="School name">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Passcode</label>
+          <input type="text" class="field-input" id="team-pass" placeholder="8 characters" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Starting float (₹)</label>
+          <input type="number" class="field-input" id="team-balance" placeholder="1000" min="0">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Add team</button>
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit team password / reset -->
+  <div id="modal-edit-team" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Edit <em>team</em></div>
+      <form id="form-edit-team" novalidate>
+        <input type="hidden" id="edit-team-id">
+        <div class="card-eyebrow" id="edit-team-display" style="margin-bottom:16px;font-size:16px;color:#eadfc7"></div>
+        <div class="field-group">
+          <label class="field-label">New passcode</label>
+          <input type="text" class="field-input" id="edit-team-pass" placeholder="Leave blank to keep current" autocomplete="off">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Float (₹)</label>
+          <input type="number" class="field-input" id="edit-team-balance" placeholder="1000" min="0">
+        </div>
+        <div class="field-group">
+          <label class="field-label" style="color:rgba(234,223,199,0.4)">Login status</label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
+            <span id="edit-login-status" style="font-family:'Special Elite',monospace;font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#a8622f">—</span>
+            <button type="button" class="btn btn-ghost" id="btn-reset-login" style="padding:6px 14px;font-size:9px">Reset login</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Save changes</button>
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Record bid -->
+  <div id="modal-bid" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Record <em>bid</em></div>
+      <form id="form-bid" novalidate>
+        <div class="field-group">
+          <label class="field-label">Team</label>
+          <select class="field-input field-select" id="bid-team"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Lot</label>
+          <select class="field-input field-select" id="bid-lot"></select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Amount (₹)</label>
+          <input type="number" class="field-input" id="bid-amount" placeholder="0" min="0">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Status</label>
+          <select class="field-input field-select" id="bid-status">
+            <option value="winning">Winning</option>
+            <option value="won">Won</option>
+            <option value="outbid">Outbid</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Record bid</button>
+          <button type="button" class="btn btn-ghost modal-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../js/admin.js"></script>
+</body>
+</html>
