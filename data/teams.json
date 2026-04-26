@@ -15,9 +15,9 @@
     "passcode": "DOONAUC2",
     "balance": 1000,
     "spent": 0,
-    "loggedIn": false,
-    "loginTime": null,
-    "loginLocked": false
+    "loggedIn": true,
+    "loginTime": "2026-04-26T16:10:01.157Z",
+    "loginLocked": true
   },
   {
     "id": "WBS-A-0003",
