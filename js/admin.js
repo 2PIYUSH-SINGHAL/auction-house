@@ -66,12 +66,55 @@ async function syncRead(path, localKey, fallback) {
 }
 
 async function syncWrite(path, data, localKey, msg) {
-  lsSet(localKey, data); // always write locally first
+  lsSet(localKey, data);
   if (!GithubStore.hasToken()) return;
   try {
     setSyncStatus('Syncing…');
-    const newSha = await GithubStore.write(path, data, shas[path] || null, msg);
+    // Always read current SHA before writing — cached SHA may be stale
+    const { sha } = await GithubStore.read(path);
+    const newSha = await GithubStore.write(path, data, sha, msg);
     shas[path] = newSha;
+    setSyncStatus('Synced ' + nowTime(), true);
+  } catch (e) {
+    setSyncStatus('Sync failed: ' + e.message, false);
+    toast('GitHub sync failed: ' + e.message);
+  }
+}
+
+// Safe teams write: reads fresh GitHub data first, merges admin changes
+// but preserves loginLocked/loggedIn from GitHub unless explicitly unlocking.
+// unlockId: teamId to explicitly unlock, null for all other writes.
+async function syncWriteTeamsSafe(msg, unlockId = null) {
+  lsSet('ah_teams', teams);
+  if (!GithubStore.hasToken()) return;
+  try {
+    setSyncStatus('Syncing…');
+    const { data: fresh, sha } = await GithubStore.read('data/teams.json');
+    const freshMap = {};
+    (Array.isArray(fresh) ? fresh : []).forEach(t => { freshMap[t.id] = t; });
+
+    const merged = teams.map(lt => {
+      const ft = freshMap[lt.id];
+      if (!ft) return lt; // new team added by admin, no conflict
+      if (lt.id === unlockId) {
+        // Explicit unlock: admin's version is authoritative
+        return lt;
+      }
+      // For all other writes, preserve login state from GitHub so we never
+      // accidentally clear a loginLocked that was set by a team signing in.
+      return {
+        ...lt,
+        loggedIn:    ft.loggedIn    || lt.loggedIn,
+        loginLocked: ft.loginLocked || lt.loginLocked,
+        loginTime:   ft.loginTime   || lt.loginTime,
+      };
+    });
+
+    teams = merged;
+    lsSet('ah_teams', teams);
+
+    const newSha = await GithubStore.write('data/teams.json', merged, sha, msg);
+    shas['data/teams.json'] = newSha;
     setSyncStatus('Synced ' + nowTime(), true);
   } catch (e) {
     setSyncStatus('Sync failed: ' + e.message, false);
@@ -597,7 +640,7 @@ document.getElementById('btn-add-team').addEventListener('click', () => {
 });
 
 document.getElementById('btn-sync-teams').addEventListener('click', async () => {
-  await syncWrite('data/teams.json', teams, 'ah_teams', '[auction] update teams');
+  await syncWriteTeamsSafe('[auction] update teams');
 });
 
 document.getElementById('form-team').addEventListener('submit', e => {
@@ -654,7 +697,7 @@ document.getElementById('btn-reset-login').addEventListener('click', () => {
   const t = teams.find(x => x.id === id);
   refreshEditLoginStatus(t);
   saveAll();
-  syncWrite('data/teams.json', teams, 'ah_teams', `[admin] reactivated login for ${id}`);
+  syncWriteTeamsSafe(`[admin] reactivated login for ${id}`, id);
   renderTeams();
   toast('Login reactivated for ' + id);
 });

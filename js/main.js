@@ -90,25 +90,19 @@ function clearFormError() {
   el.textContent = '';
 }
 
-// ── Load teams (GitHub raw → localStorage fallback) ────────
-let teamsCache = null;
-
+// ── Load teams — always fetch fresh from GitHub on submit ──
+// Never use localStorage as source of truth for loginLocked checks;
+// stale cache would allow a locked account to re-enter.
 async function loadTeams() {
-  if (teamsCache) return teamsCache;
-
-  // Try localStorage first (admin panel writes here)
-  const stored = localStorage.getItem('ah_teams');
-  if (stored) {
-    try { teamsCache = JSON.parse(stored); return teamsCache; } catch (_) {}
-  }
-
-  // Try GitHub raw URL
   try {
-    teamsCache = await GithubStore.readRaw('data/teams.json');
-    return teamsCache;
+    const fresh = await GithubStore.readRaw('data/teams.json');
+    localStorage.setItem('ah_teams', JSON.stringify(fresh));
+    return fresh;
   } catch (_) {}
-
-  return [];
+  // Fallback: localStorage (may be slightly stale, but better than nothing)
+  try {
+    return JSON.parse(localStorage.getItem('ah_teams') || '[]');
+  } catch (_) { return []; }
 }
 
 // ── Record login attempt to localStorage ──────────────────
@@ -199,13 +193,20 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     localStorage.setItem('ah_current_team_id', id);
     teamsCache = updated;
 
-    // Push updated lock state to GitHub so it persists across devices
+    // Lock the account in GitHub — read fresh data first so we only
+    // patch this team and don't overwrite other teams' loginLocked state.
     (async () => {
       try {
-        const { sha } = await GithubStore.read('data/teams.json');
-        await GithubStore.write('data/teams.json', updated, sha,
+        const { data: freshTeams, sha } = await GithubStore.read('data/teams.json');
+        const patched = (Array.isArray(freshTeams) ? freshTeams : []).map(t =>
+          t.id === id
+            ? { ...t, loggedIn: true, loginLocked: true, loginTime: new Date().toISOString() }
+            : t
+        );
+        await GithubStore.write('data/teams.json', patched, sha,
           `[login] ${id} signed in — account locked`);
-      } catch (_) { /* silent — localStorage is source of truth */ }
+        localStorage.setItem('ah_teams', JSON.stringify(patched));
+      } catch (_) { /* silent — localStorage already has the lock */ }
     })();
 
     recordLoginAttempt(id, 'success', team.school);
