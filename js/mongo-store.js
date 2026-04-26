@@ -4,11 +4,11 @@
    ════════════════════════════════════════════════════════════════ */
 window.MongoStore = (() => {
   const BASE = 'https://eac7f4.eu-central-1-free-1.restheart.com';
-  const DB   = 'auction_hall';
   const AUTH = 'Basic ' + btoa('root:Piyush@2010');
 
-  function colUrl(name)     { return `${BASE}/${DB}/${name}`; }
-  function docUrl(name, id) { return `${BASE}/${DB}/${name}/${encodeURIComponent(String(id))}`; }
+  // RESTHeart free tier has no database layer — collections live at root
+  function colUrl(name)     { return `${BASE}/${name}`; }
+  function docUrl(name, id) { return `${BASE}/${name}/${encodeURIComponent(String(id))}`; }
 
   async function req(method, url, body) {
     const opts = {
@@ -41,9 +41,8 @@ window.MongoStore = (() => {
     return out;
   }
 
-  // Ensure the database and all required collections exist (idempotent PUTs)
+  // Ensure all required collections exist (idempotent PUTs to root)
   async function ensureDB() {
-    await req('PUT', `${BASE}/${DB}`, {});
     for (const col of ['auction', 'teams', 'lots', 'bids', 'passcode_requests']) {
       await req('PUT', colUrl(col), {});
     }
@@ -104,7 +103,7 @@ window.MongoStore = (() => {
     async deleteMany(collection) {
       // Try RESTHeart bulk delete (*), fall back to individual deletes
       try {
-        const res = await fetch(`${colUrl(collection)}/*`, {
+        const res = await fetch(`${colUrl(collection)}/*?filter={}`, {
           method: 'DELETE',
           headers: { 'Authorization': AUTH },
         });
