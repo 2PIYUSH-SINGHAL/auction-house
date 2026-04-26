@@ -561,19 +561,23 @@ function renderTeams() {
     tbody.innerHTML = '<tr><td colspan="6" class="empty-row">No teams registered.</td></tr>';
     return;
   }
-  tbody.innerHTML = teams.map(t => `
+  tbody.innerHTML = teams.map(t => {
+    const locked = t.loginLocked;
+    const badgeClass = locked ? 'badge-outbid' : t.loggedIn ? 'badge-active' : 'badge-pending';
+    const badgeText  = locked ? 'locked'        : t.loggedIn ? 'logged in'   : 'waiting';
+    return `
     <tr>
       <td class="cell-mono">${t.id}</td>
       <td>${t.school}</td>
       <td class="cell-amount">₹ ${Number(t.balance).toLocaleString()}</td>
       <td class="${(t.spent || 0) > (t.balance || 0) ? 'cell-over' : 'cell-amount'}">₹ ${Number(t.spent || 0).toLocaleString()}</td>
-      <td><span class="badge badge-${t.loggedIn ? 'active' : 'pending'}">${t.loggedIn ? 'logged in' : 'waiting'}</span></td>
+      <td><span class="badge ${badgeClass}">${badgeText}</span></td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openEditTeam('${t.id}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteTeam('${t.id}')" style="margin-left:6px">Remove</button>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 document.getElementById('btn-add-team').addEventListener('click', () => {
@@ -593,7 +597,7 @@ document.getElementById('form-team').addEventListener('submit', e => {
   const balance = parseInt(document.getElementById('team-balance').value, 10) || 1000;
   if (!id || !school) return;
   if (teams.find(t => t.id === id)) { toast('Team ID already exists'); return; }
-  teams.push({ id, school, passcode: pass, balance, spent: 0, loggedIn: false, loginTime: null });
+  teams.push({ id, school, passcode: pass, balance, spent: 0, loggedIn: false, loginLocked: false, loginTime: null });
   saveAll();
   renderTeams();
   updateCountPills();
@@ -604,21 +608,44 @@ document.getElementById('form-team').addEventListener('submit', e => {
 function openEditTeam(id) {
   const t = teams.find(x => x.id === id);
   if (!t) return;
-  document.getElementById('edit-team-id').value       = id;
+  document.getElementById('edit-team-id').value            = id;
   document.getElementById('edit-team-display').textContent = t.id + ' — ' + t.school;
-  document.getElementById('edit-team-pass').value     = '';
-  document.getElementById('edit-team-balance').value  = t.balance;
-  document.getElementById('edit-login-status').textContent = t.loggedIn ? 'Logged in' : 'Not logged in';
+  document.getElementById('edit-team-pass').value          = '';
+  document.getElementById('edit-team-balance').value       = t.balance;
+  refreshEditLoginStatus(t);
   document.getElementById('modal-edit-team').classList.remove('hidden');
+}
+
+function refreshEditLoginStatus(t) {
+  const el  = document.getElementById('edit-login-status');
+  const btn = document.getElementById('btn-reset-login');
+  if (t.loginLocked) {
+    el.textContent  = 'Locked — signed in once';
+    el.style.color  = '#e07060';
+    btn.textContent = 'Reactivate';
+  } else if (t.loggedIn) {
+    el.textContent  = 'Logged in';
+    el.style.color  = '#a8622f';
+    btn.textContent = 'Reset login';
+  } else {
+    el.textContent  = 'Not logged in';
+    el.style.color  = 'rgba(234,223,199,0.4)';
+    btn.textContent = 'Reset login';
+  }
 }
 
 document.getElementById('btn-reset-login').addEventListener('click', () => {
   const id = document.getElementById('edit-team-id').value;
-  teams = teams.map(t => t.id === id ? { ...t, loggedIn: false, loginTime: null } : t);
-  document.getElementById('edit-login-status').textContent = 'Not logged in';
+  teams = teams.map(t => t.id === id
+    ? { ...t, loggedIn: false, loginLocked: false, loginTime: null }
+    : t
+  );
+  const t = teams.find(x => x.id === id);
+  refreshEditLoginStatus(t);
   saveAll();
+  syncWrite('data/teams.json', teams, 'ah_teams', `[admin] reactivated login for ${id}`);
   renderTeams();
-  toast('Login reset for ' + id);
+  toast('Login reactivated for ' + id);
 });
 
 document.getElementById('form-edit-team').addEventListener('submit', e => {
@@ -774,7 +801,7 @@ document.getElementById('btn-restart-auction').addEventListener('click', () => {
     .map(l => ({ ...l, status: 'pending', soldTo: null, soldFor: null }));
   lots  = [...carried, ...restartExtraLots];
   bids  = [];
-  teams = teams.map(t => ({ ...t, spent: 0, loggedIn: false, loginTime: null }));
+  teams = teams.map(t => ({ ...t, spent: 0, loggedIn: false, loginLocked: false, loginTime: null }));
   restartExtraLots = [];
   saveAll();
 

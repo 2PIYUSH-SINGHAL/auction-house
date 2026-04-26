@@ -157,6 +157,15 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       return;
     }
 
+    if (team.loginLocked) {
+      recordLoginAttempt(id, 'fail', 'Account locked — already signed in');
+      showFormError('This account has already been used to sign in. Contact the auctioneer to reactivate it.');
+      btn.textContent = 'Enter the hall ↗';
+      btn.disabled = false;
+      document.getElementById('auction-id').focus();
+      return;
+    }
+
     if (team.passcode !== pass) {
       recordLoginAttempt(id, 'fail', 'Wrong passcode');
       showFormError('Incorrect Passcode. Passwords are case-sensitive.');
@@ -167,12 +176,22 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
       return;
     }
 
-    // Valid — mark logged in
-    team.loggedIn  = true;
-    team.loginTime = new Date().toISOString();
+    // Valid — mark logged in and lock the account
+    team.loggedIn    = true;
+    team.loginLocked = true;
+    team.loginTime   = new Date().toISOString();
     const updated = teams.map(t => t.id === id ? team : t);
     localStorage.setItem('ah_teams', JSON.stringify(updated));
     teamsCache = updated;
+
+    // Push updated lock state to GitHub so it persists across devices
+    (async () => {
+      try {
+        const { sha } = await GithubStore.read('data/teams.json');
+        await GithubStore.write('data/teams.json', updated, sha,
+          `[login] ${id} signed in — account locked`);
+      } catch (_) { /* silent — localStorage is source of truth */ }
+    })();
 
     recordLoginAttempt(id, 'success', team.school);
 
