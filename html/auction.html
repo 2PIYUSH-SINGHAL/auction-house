@@ -16,26 +16,27 @@
       <div class="ended-eyebrow">⌁ the hammer has fallen ⌁</div>
       <h1 class="ended-heading">Thank you for <em>bidding.</em></h1>
       <p class="ended-body">
-        The auction is now closed. The auctioneer will confirm the final results shortly.<br>
-        Keep an eye on your team channel for updates.
+        The auction is now closed. The auctioneer will confirm the final
+        results shortly. Keep an eye on your team channel for updates.
       </p>
       <div class="ended-team" id="ended-team-id"></div>
-      <div class="ended-note">§ &nbsp;Results will be announced by the auctioneer &nbsp;§</div>
+      <div class="ended-note">§ &nbsp;Results announced by the auctioneer &nbsp;§</div>
     </div>
   </div>
 
-  <!-- ══ WAITING (session not open yet) ═════════════════════ -->
+  <!-- ══ SESSION WAITING ════════════════════════════════════ -->
   <div id="session-waiting" class="session-waiting hidden">
     <div class="waiting-card">
       <div class="waiting-eyebrow">⌁ stand by ⌁</div>
       <h1 class="waiting-heading">Doors are <em>closed.</em></h1>
       <p class="waiting-body">
-        The auction hasn't opened yet. This page will update automatically
-        once the auctioneer opens the floor.
+        The auction hasn't opened yet. This page refreshes automatically
+        and will update the moment the auctioneer opens the floor.
       </p>
       <div class="waiting-team" id="waiting-team-id"></div>
       <div class="waiting-pulse">
-        <span class="waiting-dot"></span> Waiting for session to go live…
+        <span class="waiting-dot"></span>
+        Waiting for session to go live…
       </div>
     </div>
   </div>
@@ -43,46 +44,49 @@
   <!-- ══ AUCTION BODY ════════════════════════════════════════ -->
   <div id="auction-body" class="hidden">
 
-    <!-- HEADER -->
-    <header class="auction-header">
-      <div class="ah-brand">
-        <div class="ah-crest">
+    <!-- MASTHEAD -->
+    <header class="masthead">
+      <div class="masthead-brand">
+        <div class="crest-wrap">
           <img src="../assets/welham-crest.png" alt="Welham crest">
         </div>
         <div>
-          <div class="ah-brand-label">hack.welham · Auction Hall</div>
-          <div class="ah-brand-name">The Auction <em>Floor</em></div>
+          <div class="brand-label">hack.welham · Session № 01</div>
+          <div class="brand-name">The Auction <em>Floor</em></div>
         </div>
       </div>
-
-      <div class="ah-live-badge">
-        <span class="ah-live-dot"></span>
-        <span class="ah-live-label">Live</span>
-      </div>
-
-      <div class="ah-team-info">
-        <div class="ah-team-school" id="team-school">—</div>
-        <div class="ah-team-row">
-          <span class="ah-team-id" id="team-id-display">—</span>
-          <span class="ah-balance-label">Balance</span>
-          <span class="ah-balance" id="team-balance">₹ —</span>
-        </div>
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        Live
       </div>
     </header>
 
-    <!-- SEARCH BAR -->
-    <div class="search-bar-wrap">
-      <div class="search-bar-inner">
-        <div class="search-icon">⌕</div>
+    <!-- TEAM INFO STRIP -->
+    <div class="team-strip">
+      <div class="team-strip-left">
+        <span class="team-school-name" id="team-school">—</span>
+        <span class="team-id-tag" id="team-id-display">—</span>
+      </div>
+      <div class="team-strip-right">
+        <span class="balance-label">Balance</span>
+        <span class="balance-amount" id="team-balance">₹ —</span>
+        <span class="last-sync-note" id="last-sync"></span>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="search-wrap">
+      <div class="search-inner">
+        <span class="search-icon">⌕</span>
         <input
           type="search"
           id="lot-search"
-          class="lot-search-input"
+          class="search-input"
           placeholder="Search lots by name or description…"
           autocomplete="off"
           spellcheck="false"
         >
-        <div class="lot-count-tag" id="lot-count-tag"></div>
+        <span class="lot-count-tag" id="lot-count-tag"></span>
       </div>
     </div>
 
@@ -96,20 +100,20 @@
   </div><!-- end #auction-body -->
 
 
-  <!-- ══ BID MODAL ═════════════════════════════════════════ -->
+  <!-- ══ BID MODAL ══════════════════════════════════════════ -->
   <div id="bid-modal" class="bid-overlay hidden">
     <div class="bid-card">
       <div class="bid-eyebrow">⌁ place your bid ⌁</div>
-      <div class="bid-lot-id" id="bid-lot-id">LOT-000</div>
+      <div class="bid-lot-id" id="bid-lot-id">—</div>
       <div class="bid-lot-title" id="bid-lot-title">—</div>
       <div class="bid-lot-desc" id="bid-lot-desc"></div>
 
       <div class="bid-meta-row">
-        <div class="bid-meta-item">
+        <div>
           <div class="bid-meta-label">Current bid</div>
           <div class="bid-meta-val" id="bid-current">₹ —</div>
         </div>
-        <div class="bid-meta-item">
+        <div>
           <div class="bid-meta-label">Your balance</div>
           <div class="bid-meta-val" id="bid-balance">₹ —</div>
         </div>
@@ -119,7 +123,7 @@
         <div class="bid-field">
           <label class="bid-field-label">
             Your Bid
-            <span class="bid-min-note" id="bid-min-note">— min ₹ —</span>
+            <span class="bid-min-note" id="bid-min-note"></span>
           </label>
           <div class="bid-input-wrap">
             <span class="bid-rupee">₹</span>
@@ -141,7 +145,9 @@
           <button type="submit" id="bid-submit" class="bid-submit-btn">
             Place Bid <em>↗</em>
           </button>
-          <button type="button" id="bid-cancel" class="bid-cancel-btn">Cancel</button>
+          <button type="button" id="bid-cancel" class="bid-cancel-btn">
+            Cancel
+          </button>
         </div>
       </form>
     </div>

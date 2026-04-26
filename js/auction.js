@@ -1,38 +1,39 @@
 // ════════════════════════════════════════════════════════════════
 // AUCTION FLOOR — hack.welham
+// GitHub JSON files are the single source of truth.
+// readRaw() is used for all polls (cache-busted, no auth needed).
+// GithubStore.read/write() is used only for writes (needs SHA).
 // ════════════════════════════════════════════════════════════════
 
-const POLL_MS        = 3000;
-const GH_POLL_MS     = 30000;
+const POLL_MS = 8000;
 
 // ── Helpers ────────────────────────────────────────────────────
-function ls(key, def) {
-  try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
-}
-function lsSet(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 function pad(n) { return String(n).padStart(2, '0'); }
 function nowTime() {
   const n = new Date();
   return `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
 }
 
-// ── Guard: must have a team ID ─────────────────────────────────
+// ── Guard ──────────────────────────────────────────────────────
 const teamId = localStorage.getItem('ah_current_team_id');
 if (!teamId) { window.location.replace('../index.html'); }
 
 // ── State ───────────────────────────────────────────────────────
-let lots        = [];
-let lotsSha     = null;
-let team        = null;
-let searchQuery = '';
+let lots     = [];
+let teams    = [];
+let lotsSha  = null;
+let bidsSha  = null;
+let ghBids   = [];
+let searchQ  = '';
 
-// ── Session status check ───────────────────────────────────────
-function readSessionStatus() {
-  return AuctionState.status;
+function getTeam()    { return teams.find(t => t.id === teamId) || null; }
+function getBalance() {
+  const t = getTeam();
+  return t ? (t.balance || 0) - (t.spent || 0) : 0;
 }
 
-function applySessionStatus() {
-  const status = readSessionStatus();
+// ── Session status ─────────────────────────────────────────────
+function applyStatus(status) {
   const body    = document.getElementById('auction-body');
   const ended   = document.getElementById('session-ended');
   const waiting = document.getElementById('session-waiting');
@@ -47,7 +48,6 @@ function applySessionStatus() {
     ended.classList.remove('hidden');
     document.getElementById('ended-team-id').textContent = teamId;
   } else {
-    // waiting or paused
     body.classList.add('hidden');
     ended.classList.add('hidden');
     waiting.classList.remove('hidden');
@@ -55,57 +55,23 @@ function applySessionStatus() {
   }
 }
 
-// Sync session status from GitHub every 30s
-async function syncSessionStatus() {
-  try {
-    await AuctionState.sync();
-    applySessionStatus();
-  } catch (_) {}
-}
-
-// ── Team data ──────────────────────────────────────────────────
-function loadTeam() {
-  const teams = ls('ah_teams', []);
-  team = teams.find(t => t.id === teamId) || null;
-}
-
-function getAvailableBalance() {
-  if (!team) return 0;
-  return (team.balance || 0) - (team.spent || 0);
-}
-
+// ── Render team info ───────────────────────────────────────────
 function renderTeamInfo() {
-  loadTeam();
-  if (!team) return;
-  document.getElementById('team-school').textContent    = team.school;
-  document.getElementById('team-id-display').textContent = team.id;
-  const bal = getAvailableBalance();
+  const t = getTeam();
+  if (!t) return;
+  document.getElementById('team-school').textContent     = t.school;
+  document.getElementById('team-id-display').textContent = t.id;
+  const bal   = getBalance();
   const balEl = document.getElementById('team-balance');
-  balEl.textContent = '₹ ' + bal.toLocaleString();
+  balEl.textContent = '₹ ' + bal.toLocaleString('en-IN');
   balEl.classList.toggle('balance-low', bal < 200);
 }
 
-// ── Lots ────────────────────────────────────────────────────────
-async function loadLots() {
-  // Try GitHub first for authoritative state
-  try {
-    const { data, sha } = await GithubStore.read('data/lots.json');
-    lots    = Array.isArray(data) ? data : [];
-    lotsSha = sha;
-    lsSet('ah_lots', lots);
-  } catch (_) {
-    // Fall back to localStorage
-    lots = ls('ah_lots', []);
-  }
-}
-
+// ── Render lot grid ────────────────────────────────────────────
 function renderLots() {
   const grid  = document.getElementById('lot-grid');
-  const query = searchQuery.toLowerCase().trim();
+  const query = searchQ.toLowerCase().trim();
 
-  const bids = ls('ah_bids', []);
-
-  // Filter: exclude removed/hidden lots, apply search
   let visible = lots.filter(l => l.status !== 'removed');
   if (query) {
     visible = visible.filter(l =>
@@ -115,52 +81,47 @@ function renderLots() {
     );
   }
 
-  // Update count tag
-  const tag = document.getElementById('lot-count-tag');
-  tag.textContent = visible.length
+  const countEl = document.getElementById('lot-count-tag');
+  countEl.textContent = visible.length
     ? `${visible.length} lot${visible.length !== 1 ? 's' : ''}`
     : '';
 
   if (!visible.length) {
     grid.innerHTML = `<div class="lot-empty">${
-      query ? 'No lots match your search.' : 'No lots yet — the auctioneer will add items shortly.'
+      query
+        ? 'No lots match your search.'
+        : 'No lots yet — the auctioneer will add items shortly.'
     }</div>`;
     return;
   }
 
-  grid.innerHTML = visible.map((lot, idx) => {
-    const sold      = lot.status === 'sold';
-    const isMine    = lot.currentBidder === teamId;
-    const topBid    = lot.currentBid || 0;
-    const startBid  = lot.startingBid || 0;
-    const showAmt   = sold ? lot.soldFor || topBid : (topBid || startBid);
-    const bidLabel  = sold
+  grid.innerHTML = visible.map((lot, i) => {
+    const sold     = lot.status === 'sold';
+    const isMine   = lot.currentBidder === teamId;
+    const dispAmt  = sold
+      ? (lot.soldFor || lot.currentBid || lot.startingBid || 0)
+      : (lot.currentBid || lot.startingBid || 0);
+    const bidLabel = sold
       ? 'Sold for'
-      : topBid
-        ? 'Current bid'
-        : 'Starting bid';
-    const badgeClass = sold
-      ? 'badge-sold'
-      : isMine
-        ? 'badge-mine'
-        : 'badge-open';
-    const badgeText  = sold ? 'sold' : isMine ? 'your bid' : 'open';
-    const cardClass  = ['lot-card', sold ? 'lot-sold' : '', isMine ? 'lot-mine' : '']
+      : lot.currentBid ? 'Current bid' : 'Starting bid';
+    const badge    = sold ? 'sold' : isMine ? 'your bid' : 'open';
+    const badgeCls = sold ? 'badge-sold' : isMine ? 'badge-mine' : 'badge-open';
+    const cardCls  = ['lot-card', sold ? 'lot-sold' : '', isMine ? 'lot-mine' : '']
       .filter(Boolean).join(' ');
 
     return `
-    <div class="${cardClass}" style="animation-delay:${Math.min(idx * 0.04, 0.4)}s">
+    <div class="${cardCls}" style="animation-delay:${Math.min(i * 0.04, 0.5)}s">
       <div class="lot-card-top">
-        <div class="lot-number">${lot.id}</div>
-        <span class="lot-badge ${badgeClass}">${badgeText}</span>
+        <span class="lot-number">${lot.id}</span>
+        <span class="lot-badge ${badgeCls}">${badge}</span>
       </div>
       <div class="lot-title">${lot.title}</div>
       ${lot.description ? `<div class="lot-desc">${lot.description}</div>` : ''}
-      <div class="lot-bid-row">
-        <div class="lot-bid-info">
+      <div class="lot-footer">
+        <div>
           <div class="lot-bid-label">${bidLabel}</div>
           <div class="lot-bid-amount${isMine && !sold ? ' bid-mine' : ''}">
-            ₹ ${Number(showAmt).toLocaleString()}
+            ₹ ${Number(dispAmt).toLocaleString('en-IN')}
           </div>
         </div>
         ${!sold
@@ -171,44 +132,36 @@ function renderLots() {
   }).join('');
 }
 
-// ── Poll loop ───────────────────────────────────────────────────
-function pollLocal() {
-  // Re-read lots and team from localStorage (admin may have updated them)
-  const fresh = ls('ah_lots', lots);
-  if (JSON.stringify(fresh) !== JSON.stringify(lots)) {
-    lots = fresh;
-    renderLots();
-  }
-  renderTeamInfo();
-  // Check session status in case admin closed it
-  const prev = AuctionState.status;
-  const raw  = localStorage.getItem('ah_auction');
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed.status !== prev) {
-        AuctionState.status = parsed.status;
-        applySessionStatus();
-      }
-    } catch (_) {}
-  }
+// ── Poll: GitHub readRaw (cache-busted, no auth, no rate limit) ─
+async function poll() {
+  try {
+    const [freshAuction, freshLots, freshTeams] = await Promise.all([
+      GithubStore.readRaw('data/auction.json'),
+      GithubStore.readRaw('data/lots.json'),
+      GithubStore.readRaw('data/teams.json'),
+    ]);
+
+    // Update session status
+    const newStatus = freshAuction.status || 'waiting';
+    AuctionState.status = newStatus;
+    applyStatus(newStatus);
+
+    // Update lots + teams
+    lots  = Array.isArray(freshLots)  ? freshLots  : lots;
+    teams = Array.isArray(freshTeams) ? freshTeams : teams;
+
+    if (newStatus === 'live') {
+      renderTeamInfo();
+      renderLots();
+      updateLastSync();
+    }
+  } catch (_) { /* network error — keep showing stale data */ }
 }
 
-// Also react immediately when admin writes to localStorage from the same browser
-window.addEventListener('storage', (e) => {
-  if (e.key === 'ah_lots') {
-    lots = JSON.parse(e.newValue || '[]');
-    renderLots();
-  }
-  if (e.key === 'ah_teams') {
-    renderTeamInfo();
-  }
-  if (e.key === 'ah_auction') {
-    AuctionState.status = (JSON.parse(e.newValue || '{}') || {}).status || AuctionState.status;
-    applySessionStatus();
-  }
-});
-
+function updateLastSync() {
+  const el = document.getElementById('last-sync');
+  if (el) el.textContent = 'Updated ' + nowTime();
+}
 
 // ── Bid modal ───────────────────────────────────────────────────
 let activeLotId = null;
@@ -218,30 +171,29 @@ function openBid(lotId) {
   if (!lot || lot.status === 'sold') return;
   activeLotId = lotId;
 
-  const topBid  = lot.currentBid || 0;
-  const minBid  = (topBid || (lot.startingBid || 0));
-  const dispBid = topBid || lot.startingBid || 0;
+  const topBid = lot.currentBid || lot.startingBid || 0;
 
   document.getElementById('bid-lot-id').textContent    = lot.id;
   document.getElementById('bid-lot-title').textContent  = lot.title;
   const descEl = document.getElementById('bid-lot-desc');
-  descEl.textContent = lot.description || '';
-  descEl.style.display = lot.description ? 'block' : 'none';
+  descEl.textContent    = lot.description || '';
+  descEl.style.display  = lot.description ? '' : 'none';
 
-  document.getElementById('bid-current').textContent = '₹ ' + dispBid.toLocaleString();
-  document.getElementById('bid-balance').textContent  = '₹ ' + getAvailableBalance().toLocaleString();
-  document.getElementById('bid-min-note').textContent = `— min ₹ ${(minBid + 1).toLocaleString()}`;
+  document.getElementById('bid-current').textContent = '₹ ' + topBid.toLocaleString('en-IN');
+  document.getElementById('bid-balance').textContent  = '₹ ' + getBalance().toLocaleString('en-IN');
+  document.getElementById('bid-min-note').textContent = `min ₹ ${(topBid + 1).toLocaleString('en-IN')}`;
 
-  const amtInput = document.getElementById('bid-amount');
-  amtInput.value = '';
-  amtInput.min   = minBid + 1;
+  const amtEl = document.getElementById('bid-amount');
+  amtEl.value = '';
+  amtEl.min   = topBid + 1;
 
   document.getElementById('bid-error').classList.add('hidden');
-  document.getElementById('bid-submit').disabled = false;
-  document.getElementById('bid-submit').innerHTML = 'Place Bid <em>↗</em>';
+  const btn = document.getElementById('bid-submit');
+  btn.disabled = false;
+  btn.innerHTML = 'Place Bid <em>↗</em>';
 
   document.getElementById('bid-modal').classList.remove('hidden');
-  setTimeout(() => amtInput.focus(), 80);
+  setTimeout(() => amtEl.focus(), 80);
 }
 
 function closeBid() {
@@ -250,16 +202,14 @@ function closeBid() {
 }
 
 document.getElementById('bid-cancel').addEventListener('click', closeBid);
-
-document.getElementById('bid-modal').addEventListener('click', (e) => {
+document.getElementById('bid-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('bid-modal')) closeBid();
 });
-
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeBid();
 });
 
-document.getElementById('bid-form').addEventListener('submit', async (e) => {
+document.getElementById('bid-form').addEventListener('submit', async e => {
   e.preventDefault();
   await submitBid();
 });
@@ -270,7 +220,7 @@ async function submitBid() {
 
   const amount  = parseInt(document.getElementById('bid-amount').value, 10);
   const minBid  = (lot.currentBid || lot.startingBid || 0) + 1;
-  const balance = getAvailableBalance();
+  const balance = getBalance();
   const errEl   = document.getElementById('bid-error');
 
   function showErr(msg) {
@@ -281,11 +231,11 @@ async function submitBid() {
   }
 
   if (!amount || isNaN(amount) || amount < minBid) {
-    showErr(`Bid must be at least ₹ ${minBid.toLocaleString()}`);
+    showErr(`Bid must be at least ₹ ${minBid.toLocaleString('en-IN')}`);
     return;
   }
   if (amount > balance) {
-    showErr(`Insufficient balance — you have ₹ ${balance.toLocaleString()} available.`);
+    showErr(`Not enough balance — you have ₹ ${balance.toLocaleString('en-IN')} left.`);
     return;
   }
 
@@ -294,94 +244,106 @@ async function submitBid() {
   btn.textContent = 'Placing…';
   btn.disabled = true;
 
-  // Build bid record
-  const bid = {
-    id:       'bid-' + Date.now(),
-    teamId,
-    lotId:    lot.id,
-    lotTitle: lot.title,
-    amount,
-    status:   'pending',
-    time:     nowTime(),
-  };
-
-  // Write bid to localStorage
-  const bids = ls('ah_bids', []);
-  // Mark any earlier pending bid from this team on this lot as superseded
-  const updatedBids = bids.map(b =>
-    b.teamId === teamId && b.lotId === lot.id && b.status === 'pending'
-      ? { ...b, status: 'outbid' }
-      : b
-  );
-  updatedBids.push(bid);
-  lsSet('ah_bids', updatedBids);
-
-  // Optimistically update the lot's current bid in memory + localStorage
+  // Optimistic local update so bidder sees result immediately
   lots = lots.map(l =>
     l.id === lot.id
       ? { ...l, currentBid: amount, currentBidder: teamId }
       : l
   );
-  lsSet('ah_lots', lots);
-
-  // Push both to GitHub async (non-blocking)
-  (async () => {
-    try {
-      // Write updated lots
-      const newLotSha = await GithubStore.write(
-        'data/lots.json', lots, lotsSha,
-        `[bid] ${teamId} bid ₹${amount} on ${lot.id}`
-      );
-      if (newLotSha) lotsSha = newLotSha;
-
-      // Write bids file
-      const { data: ghBids, sha: bidsSha } = await GithubStore.read('data/bids.json')
-        .catch(() => ({ data: [], sha: null }));
-      const mergedBids = [bid, ...(Array.isArray(ghBids) ? ghBids : [])];
-      await GithubStore.write('data/bids.json', mergedBids, bidsSha,
-        `[bid] ${teamId} — ${lot.title} ₹${amount}`);
-    } catch (_) { /* silent — localStorage already updated */ }
-  })();
-
-  closeBid();
   renderTeamInfo();
   renderLots();
+  closeBid();
+
+  // Write to GitHub — read fresh SHAs first to avoid conflicts
+  try {
+    const [{ data: freshLots, sha: lSha }, { data: freshBidsData, sha: bSha }] =
+      await Promise.all([
+        GithubStore.read('data/lots.json'),
+        GithubStore.read('data/bids.json').catch(() => ({ data: [], sha: null })),
+      ]);
+
+    lotsSha = lSha;
+    bidsSha = bSha;
+
+    // Merge our optimistic bid into the freshly-read lots
+    const updatedLots = (Array.isArray(freshLots) ? freshLots : []).map(l =>
+      l.id === lot.id
+        ? { ...l, currentBid: amount, currentBidder: teamId }
+        : l
+    );
+
+    const bid = {
+      id:       'bid-' + Date.now(),
+      teamId,
+      lotId:    lot.id,
+      lotTitle: lot.title,
+      amount,
+      status:   'pending',
+      time:     nowTime(),
+    };
+
+    const updatedBids = [bid, ...(Array.isArray(freshBidsData) ? freshBidsData : [])];
+
+    // Write both files concurrently
+    const [newLotSha, newBidSha] = await Promise.all([
+      GithubStore.write('data/lots.json', updatedLots, lotsSha,
+        `[bid] ${teamId} — ${lot.title} ₹${amount}`),
+      GithubStore.write('data/bids.json', updatedBids, bidsSha,
+        `[bid] ${teamId} — ${lot.title} ₹${amount}`),
+    ]);
+
+    lots    = updatedLots;
+    lotsSha = newLotSha;
+    bidsSha = newBidSha;
+    renderLots();
+    updateLastSync();
+  } catch (e) {
+    // Show error but keep the optimistic UI — poll will correct it
+    errEl.textContent = 'Bid recorded locally but GitHub sync failed. The auctioneer can see it.';
+    errEl.classList.remove('hidden');
+    document.getElementById('bid-modal').classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Place Bid <em>↗</em>';
+  }
 }
 
-
 // ── Search ──────────────────────────────────────────────────────
-document.getElementById('lot-search').addEventListener('input', (e) => {
-  searchQuery = e.target.value;
+document.getElementById('lot-search').addEventListener('input', e => {
+  searchQ = e.target.value;
   renderLots();
 });
 
-
-// ── Initialise ──────────────────────────────────────────────────
+// ── Init ────────────────────────────────────────────────────────
 async function init() {
+  // Sync session status first
   await AuctionState.sync().catch(() => {});
-  applySessionStatus();
+  applyStatus(AuctionState.status);
 
-  if (AuctionState.isLive()) {
-    loadTeam();
+  if (AuctionState.status !== 'closed') {
+    // Load all data from GitHub once (gets SHAs for later writes)
+    try {
+      const [{ data: lData, sha: lSha }, { data: tData }, { data: bData, sha: bSha }] =
+        await Promise.all([
+          GithubStore.read('data/lots.json'),
+          GithubStore.read('data/teams.json'),
+          GithubStore.read('data/bids.json').catch(() => ({ data: [], sha: null })),
+        ]);
+      lots    = Array.isArray(lData) ? lData : [];
+      teams   = Array.isArray(tData) ? tData : [];
+      ghBids  = Array.isArray(bData) ? bData : [];
+      lotsSha = lSha;
+      bidsSha = bSha;
+    } catch (_) {}
+
     renderTeamInfo();
-    await loadLots();
     renderLots();
+    updateLastSync();
   }
 }
 
 init();
 
-// Local poll: fast, for same-browser updates
-setInterval(pollLocal, POLL_MS);
-
-// GitHub poll: slower, for cross-device updates
-setInterval(async () => {
-  if (!AuctionState.isLive()) {
-    await syncSessionStatus();
-    return;
-  }
-  await syncSessionStatus();
-  await loadLots();
-  renderLots();
-  renderTeamInfo();
-}, GH_POLL_MS);
+// Continuous poll — GitHub readRaw with cache-busting timestamp
+// readRaw hits the CDN (no auth, no rate limit)
+setInterval(poll, POLL_MS);

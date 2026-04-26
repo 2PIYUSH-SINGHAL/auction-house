@@ -357,22 +357,33 @@ function renderLiveFeed() {
   `).join('');
 }
 
-// Auto-refresh feed every 3s when on session section
-setInterval(() => {
+// Poll GitHub for bids + lots every 8s — source of truth for cross-device
+setInterval(async () => {
+  try {
+    const [freshBids, freshLots, freshTeams] = await Promise.all([
+      GithubStore.readRaw('data/bids.json'),
+      GithubStore.readRaw('data/lots.json'),
+      GithubStore.readRaw('data/teams.json'),
+    ]);
+    if (Array.isArray(freshBids))  { bids  = freshBids;  lsSet('ah_bids',  bids); }
+    if (Array.isArray(freshLots))  { lots  = freshLots;  lsSet('ah_lots',  lots); }
+    if (Array.isArray(freshTeams)) { teams = freshTeams; lsSet('ah_teams', teams); }
+  } catch (_) { /* keep stale data on network error */ }
   if (document.getElementById('section-session').classList.contains('active')) {
-    bids = ls('ah_bids', bids);
     renderLiveFeed();
     renderStats();
   }
-}, 3000);
+}, 8000);
 
-// Also update when storage changes from another tab
+// Instant update when another tab on the same browser writes to localStorage
 window.addEventListener('storage', e => {
   if (e.key === 'ah_bids') {
-    bids = ls('ah_bids', bids);
+    bids = JSON.parse(e.newValue || '[]');
     renderLiveFeed();
     renderStats();
   }
+  if (e.key === 'ah_lots')  { lots  = JSON.parse(e.newValue || '[]'); }
+  if (e.key === 'ah_teams') { teams = JSON.parse(e.newValue || '[]'); }
 });
 
 
