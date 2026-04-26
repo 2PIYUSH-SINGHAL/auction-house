@@ -1665,6 +1665,195 @@ body.auctioneer-mode .help-note code {
 }
 
 /* ════════════════════════════════════════════════════════
+   FORGOT PASSCODE OVERLAY
+   ════════════════════════════════════════════════════════ */
+@keyframes forg-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes forg-card-in {
+  from { opacity: 0; translate: 0 28px; scale: 0.97; }
+  to   { opacity: 1; translate: 0 0;    scale: 1; }
+}
+
+#forgot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 42, 26, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 600;
+  padding: 40px 24px;
+  animation: forg-overlay-in 0.22s ease both;
+}
+
+#forgot-overlay.hidden { display: none !important; }
+
+.forg-card {
+  position: relative;
+  background: #e0d2b3;
+  border: 1.5px solid rgba(58, 42, 26, 0.42);
+  padding: 48px 44px 38px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 4px 8px 32px rgba(0, 0, 0, 0.35);
+  transform: rotate(-0.4deg);
+  animation: forg-card-in 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) 0.08s both;
+}
+
+.forg-card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 80px;
+  height: 22px;
+  background: rgba(168, 98, 47, 0.28);
+  border: 1px solid rgba(168, 98, 47, 0.4);
+}
+
+.forg-eyebrow {
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: #a8622f;
+  margin-bottom: 10px;
+}
+
+.forg-title {
+  font-family: "IM Fell English", serif;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  color: #3a2a1a;
+  margin-bottom: 4px;
+}
+
+.forg-title em { color: #a8622f; }
+
+.forg-sub {
+  font-family: "Caveat", cursive;
+  font-size: 16px;
+  color: rgba(58, 42, 26, 0.5);
+  margin-bottom: 28px;
+}
+
+/* reuse ac-field / ac-label / ac-input from auctioneer overlay
+   but override colours for light theme */
+.forg-input {
+  color: #3a2a1a !important;
+  border-bottom-color: rgba(58, 42, 26, 0.45) !important;
+}
+
+.forg-input:focus {
+  border-bottom-color: #a8622f !important;
+}
+
+.forg-input::placeholder {
+  color: rgba(58, 42, 26, 0.28) !important;
+}
+
+.forg-card .ac-label {
+  color: rgba(58, 42, 26, 0.5);
+}
+
+.forg-error {
+  background: rgba(168, 98, 47, 0.1);
+  border: 1px solid rgba(168, 98, 47, 0.4);
+  color: #a8622f;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+}
+
+.forg-submit {
+  display: block;
+  width: 100%;
+  background: #3a2a1a;
+  color: #eadfc7;
+  border: none;
+  padding: 15px;
+  font-family: "IM Fell English", serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 24px;
+  transition: background 0.15s, scale 0.1s;
+}
+
+.forg-submit:hover:not(:disabled) { background: #a8622f; }
+.forg-submit:active:not(:disabled) { scale: 0.985; }
+.forg-submit:disabled { opacity: 0.5; cursor: default; }
+.forg-submit em { font-style: italic; }
+
+.forg-back {
+  margin-top: 16px;
+  text-align: center;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(58, 42, 26, 0.35);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.forg-back:hover { color: rgba(58, 42, 26, 0.7); }
+
+/* ── Success state ──────────────────────────────── */
+.forg-success-body {
+  font-size: 16px;
+  color: #6b4a2b;
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+
+.forg-notice {
+  position: relative;
+  background: #eadfc7;
+  border: 1.5px dashed rgba(58, 42, 26, 0.35);
+  padding: 18px 18px 14px;
+  transform: rotate(0.4deg);
+}
+
+.forg-notice-label {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  padding: 2px 10px;
+  background: #a8622f;
+  color: #eadfc7;
+  font-family: "Special Elite", monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.forg-notice p {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #3a2a1a;
+  margin-top: 4px;
+}
+
+.forg-notice strong {
+  font-family: "Special Elite", monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #a8622f;
+}
+
+/* ════════════════════════════════════════════════════════
    AUCTIONEER OVERLAY  (Konami-activated full-screen)
    ════════════════════════════════════════════════════════ */
 @keyframes ac-overlay-in {

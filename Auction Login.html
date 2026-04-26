@@ -246,6 +246,62 @@
   </div>
 
 
+  <!-- ══ FORGOT PASSCODE OVERLAY ════════════════════════════ -->
+  <div id="forgot-overlay" class="hidden">
+    <div class="forg-card" id="forg-card">
+
+      <!-- Default: form state -->
+      <div id="forg-form-state">
+        <div class="forg-eyebrow">⌁ passcode recovery ⌁</div>
+        <div class="forg-title">Forgot <em>Passcode?</em></div>
+        <div class="forg-sub">— fill in your details to send a request to the auctioneer —</div>
+
+        <form id="forgot-form" novalidate>
+          <div class="ac-field">
+            <label class="ac-label" for="forg-id">Auction ID</label>
+            <input type="text" id="forg-id" class="ac-input forg-input"
+                   placeholder="WBS-A-____" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="ac-field">
+            <label class="ac-label" for="forg-school">School Name</label>
+            <input type="text" id="forg-school" class="ac-input forg-input"
+                   placeholder="Your school" autocomplete="off">
+          </div>
+
+          <div id="forg-error" class="forg-error hidden"></div>
+
+          <button type="submit" class="forg-submit" id="forg-submit-btn">
+            Send request <em>↗</em>
+          </button>
+        </form>
+
+        <div class="forg-back" id="forg-back">esc · cancel</div>
+      </div>
+
+      <!-- Success state -->
+      <div id="forg-success-state" class="hidden">
+        <div class="forg-eyebrow">⌁ request sent ⌁</div>
+        <div class="forg-title">Request <em>logged.</em></div>
+        <div class="forg-success-body">
+          Your passcode change request has been sent to the auctioneer.
+        </div>
+        <div class="forg-notice">
+          <div class="forg-notice-label">Important</div>
+          <p>
+            To speed things up, also email
+            <strong>auction@welham.edu.in</strong> from your school address
+            with your Auction ID and school name.
+            The auctioneer will reset your passcode before doors open.
+          </p>
+        </div>
+        <button class="forg-submit" id="forg-done-btn" style="margin-top:22px">
+          Back to sign-in <em>↩</em>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ══ AUCTIONEER OVERLAY (Konami activated) ══════════════ -->
   <div id="auctioneer-view" class="hidden">
     <div class="ac-card">

@@ -323,20 +323,103 @@ document.querySelector('.countdown-display').addEventListener('click', () => {
 });
 
 
-// ── 8. "forgot passcode?" × 3 → escalating exasperation ───────
-let forgotClicks = 0, forgotTimer;
+// ── 8. "forgot passcode?" → recovery overlay ──────────────────
+const forgotOverlay  = document.getElementById('forgot-overlay');
+const forgotFormState    = document.getElementById('forg-form-state');
+const forgotSuccessState = document.getElementById('forg-success-state');
+
+function openForgotOverlay() {
+  forgotFormState.classList.remove('hidden');
+  forgotSuccessState.classList.add('hidden');
+  document.getElementById('forg-id').value     = '';
+  document.getElementById('forg-school').value = '';
+  document.getElementById('forg-error').classList.add('hidden');
+  document.getElementById('forg-error').textContent = '';
+  const btn = document.getElementById('forg-submit-btn');
+  btn.disabled = false;
+  btn.innerHTML = 'Send request <em>↗</em>';
+  forgotOverlay.classList.remove('hidden');
+  // Pre-fill Auction ID if already typed in the login form
+  const typedId = document.getElementById('auction-id').value.trim().toUpperCase();
+  if (typedId) document.getElementById('forg-id').value = typedId;
+  setTimeout(() => {
+    const focusEl = document.getElementById('forg-id').value ? document.getElementById('forg-school') : document.getElementById('forg-id');
+    focusEl.focus();
+  }, 80);
+}
+
+function closeForgotOverlay() {
+  forgotOverlay.classList.add('hidden');
+}
+
 document.querySelector('.forgot-link').addEventListener('click', (e) => {
   e.preventDefault();
-  forgotClicks++;
-  clearTimeout(forgotTimer);
-  forgotTimer = setTimeout(() => { forgotClicks = 0; }, 1500);
-  if      (forgotClicks === 1) toast('email auction@welham.edu.in');
-  else if (forgotClicks === 2) toast('seriously — auction@welham.edu.in');
-  else if (forgotClicks >= 3) {
-    forgotClicks = 0;
-    toast('<em>please.</em> auction@welham.edu.in — that\'s all we\'ve got.');
-    wobble(document.querySelector('.forgot-link').closest('.card'));
+  openForgotOverlay();
+});
+
+document.getElementById('forg-back').addEventListener('click', closeForgotOverlay);
+
+document.getElementById('forg-done-btn').addEventListener('click', closeForgotOverlay);
+
+forgotOverlay.addEventListener('click', (e) => {
+  if (e.target === forgotOverlay) closeForgotOverlay();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !forgotOverlay.classList.contains('hidden')) {
+    closeForgotOverlay();
   }
+});
+
+document.getElementById('forgot-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id     = document.getElementById('forg-id').value.trim().toUpperCase();
+  const school = document.getElementById('forg-school').value.trim();
+  const errEl  = document.getElementById('forg-error');
+
+  if (!id || !school) {
+    errEl.textContent = !id ? 'Please enter your Auction ID.' : 'Please enter your school name.';
+    errEl.classList.remove('hidden');
+    errEl.classList.add('error-shake');
+    errEl.addEventListener('animationend', () => errEl.classList.remove('error-shake'), { once: true });
+    (!id ? document.getElementById('forg-id') : document.getElementById('forg-school')).focus();
+    return;
+  }
+
+  errEl.classList.add('hidden');
+  const btn = document.getElementById('forg-submit-btn');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  const now  = new Date();
+  const pad  = n => String(n).padStart(2, '0');
+  const entry = {
+    time:   `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    date:   now.toLocaleDateString('en-IN'),
+    teamId: id,
+    school,
+    status: 'pending',
+  };
+
+  // Write to localStorage immediately
+  const reqs = JSON.parse(localStorage.getItem('ah_forgot') || '[]');
+  reqs.unshift(entry);
+  localStorage.setItem('ah_forgot', JSON.stringify(reqs));
+
+  // Also push to GitHub so the auctioneer can git-pull and see it
+  (async () => {
+    try {
+      const { data, sha } = await GithubStore.read('data/passcode-requests.json');
+      const updated = [entry, ...(Array.isArray(data) ? data : [])];
+      await GithubStore.write('data/passcode-requests.json', updated, sha,
+        `[passcode-req] ${id} — ${entry.date} ${entry.time}`);
+    } catch (_) { /* silent — localStorage is the fallback */ }
+  })();
+
+  setTimeout(() => {
+    forgotFormState.classList.add('hidden');
+    forgotSuccessState.classList.remove('hidden');
+  }, 800);
 });
 
 
