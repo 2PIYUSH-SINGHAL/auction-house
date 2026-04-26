@@ -406,13 +406,10 @@ document.getElementById('forgot-form').addEventListener('submit', (e) => {
   reqs.unshift(entry);
   localStorage.setItem('ah_forgot', JSON.stringify(reqs));
 
-  // Also push to GitHub so the auctioneer can git-pull and see it
+  // Push to RESTHeart so the auctioneer sees it in the admin panel
   (async () => {
     try {
-      const { data, sha } = await GithubStore.read('data/passcode-requests.json');
-      const updated = [entry, ...(Array.isArray(data) ? data : [])];
-      await GithubStore.write('data/passcode-requests.json', updated, sha,
-        `[passcode-req] ${id} — ${entry.date} ${entry.time}`);
+      await MongoStore.insertOne('passcode_requests', { ...entry, id: 'req-' + Date.now() });
     } catch (_) { /* silent — localStorage is the fallback */ }
   })();
 
