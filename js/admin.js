@@ -731,8 +731,12 @@ document.getElementById('form-team').addEventListener('submit', async e => {
   renderTeams();
   updateCountPills();
   document.getElementById('modal-team').classList.add('hidden');
-  try { await MongoStore.insertOne('teams', team); } catch (_) {}
-  toast('Team added');
+  try {
+    await MongoStore.insertOne('teams', team);
+    toast('Team added');
+  } catch (e) {
+    toast('Team saved locally — DB sync failed: ' + e.message);
+  }
 });
 
 function openEditTeam(id) {
