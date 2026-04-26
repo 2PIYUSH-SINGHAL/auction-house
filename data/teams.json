@@ -2,7 +2,7 @@
   {
     "id": "WBS-A-0001",
     "school": "Welham Boys School",
-    "passcode": "WBSAUC01",
+    "passcode": "apple",
     "balance": 1000,
     "spent": 0,
     "loggedIn": false,
