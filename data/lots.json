@@ -5,6 +5,8 @@
     "title": "apples",
     "desc": "apples",
     "floor": 100,
-    "status": "pending"
+    "status": "pending",
+    "currentBid": 100,
+    "currentBidder": "WBS-A-0002"
   }
 ]
