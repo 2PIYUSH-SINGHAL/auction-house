@@ -20,7 +20,8 @@ window.MongoStore = (() => {
       opts.body = JSON.stringify(body);
     }
     const res = await fetch(url, opts);
-    if (res.status === 404)                           return null;
+    // 404 on reads = document not found (ok). 404 on writes = collection missing (error).
+    if (res.status === 404 && (method === 'GET' || method === 'DELETE')) return null;
     if (res.status === 204 || res.status === 201)     return null;
     if (res.status === 200 && method === 'DELETE')    return null;
     if (!res.ok) {

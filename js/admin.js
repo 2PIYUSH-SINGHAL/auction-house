@@ -79,6 +79,8 @@ async function syncBids() {
 }
 
 async function initData() {
+  setSyncStatus('Connecting…');
+  try { await MongoStore.ping(); } catch (_) {}
   setSyncStatus('Loading…');
   try {
     const [freshTeams, freshLots, freshBids, freshForgot] = await Promise.all([
